@@ -30,8 +30,7 @@
     "react-router-dom": "^6.15.0",
     "monaco-editor": "^0.44.0",
     "@monaco-editor/react": "^4.5.0",
-    "react-sandpack": "^2.14.1",
-    "tailwindcss": "^3.3.3",
+    "@codesandbox/sandpack-react": "^2.14.0",
     "classnames": "^2.3.2"
   },
   "devDependencies": {
@@ -53,7 +52,8 @@
     "@typescript-eslint/parser": "^6.4.1",
     "prettier": "^3.0.2",
     "postcss": "^8.4.28",
-    "autoprefixer": "^10.4.15"
+    "autoprefixer": "^10.4.15",
+    "tailwindcss": "^3.3.3"
   },
   "engines": {
     "node": ">=18.0.0",
