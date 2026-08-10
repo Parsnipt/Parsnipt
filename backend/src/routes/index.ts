@@ -4,15 +4,22 @@
  */
 
 import { Router } from 'express';
-import healthRouter from './health.js'; 
+import healthRouter from './health.js';
+import authRouter from './auth.js';
+import usersRouter from './users.js';
 
 const router = Router();
 
 // Health check (no auth required)
 router.use('/health', healthRouter);
 
-// TODO: Expected future routes here (e.g., Auth, Extractions): 
-// router.use('/auth', authRouter);
+// Authentication routes
+router.use('/auth', authRouter);
+
+// User routes
+router.use('/users', usersRouter);
+
+// Expected future routes here (e.g., Auth, Extractions): 
 // router.use('/extractions', extractionsRouter);
 
 export default router;
