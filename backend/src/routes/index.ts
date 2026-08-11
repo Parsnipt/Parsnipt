@@ -1,12 +1,13 @@
 /**
- * Main API router
- * Aggregates all API routes
- */
+ * Main API router
+ * Aggregates all API routes
+ */
 
 import { Router } from 'express';
 import healthRouter from './health.js';
 import authRouter from './auth.js';
 import usersRouter from './users.js';
+import extractionsRouter from './extractions.js';
 
 const router = Router();
 
@@ -19,7 +20,7 @@ router.use('/auth', authRouter);
 // User routes
 router.use('/users', usersRouter);
 
-// Expected future routes here (e.g., Auth, Extractions): 
-// router.use('/extractions', extractionsRouter);
+// Extraction routes
+router.use('/extractions', extractionsRouter);
 
 export default router;

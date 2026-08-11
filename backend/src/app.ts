@@ -26,6 +26,8 @@ export const createApp = (): Express => {
     windowMs: 15 * 60 * 1000,
     max: 100,
     message: 'Too many requests from this IP, please try again later.',
+    // Bypasses the rate limiter entirely when running automated tests
+    skip: (_req) => process.env.NODE_ENV === 'test', 
   });
   app.use(limiter);
 
