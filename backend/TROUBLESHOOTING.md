@@ -17,3 +17,25 @@ This document tracks environmental quirks, dependency conflicts, and developer "
 * **Root Cause:** PowerShell aggressively strips double-quotes from JSON payloads before passing them to the external `curl` C-program, mangling the request body.
 * **Solution:** Use native PowerShell cmdlets (`Invoke-RestMethod`) for manual API testing instead of `curl.exe`. 
   * *Tip:* Append `| ConvertTo-Json -Depth 5` to the command to prevent PowerShell from collapsing nested JSON objects (like tokens) into `@{}` placeholders.
+
+  ## Issue 3: Testing File Uploads & Express Middleware
+
+### 1. Supertest dropping file extensions with Multer
+**Symptom:** Tests using `supertest` with `.attach('file', Buffer.from('code'), 'test.js')` fail Multer's strict file extension validation, throwing `Invalid file type` errors despite the filename being technically correct.
+**Cause:** When using `Buffer.from()` in-memory, `supertest` can sometimes drop or mangle the `originalname` property. Multer relies on this property to check the extension via `path.extname()`.
+**Solution:** Pass a complete options object to the attach method to explicitly define the filename: `.attach('file', Buffer.from('code'), { filename: 'test.js' })`.
+
+### 2. Global Rate Limiter failing parallel test suites
+**Symptom:** Running the full Jest suite (`npm test`) results in cascading, random test failures (often throwing `401 Unauthorized` or `429 Too Many Requests`), but running test files individually yields a 100% pass rate.
+**Cause:** Jest runs test files in parallel. `express-rate-limit` tracks requests by IP. Local tests all originate from `127.0.0.1`. Firing dozens of mock auth and upload requests simultaneously triggers the DDoS protection and bans the testing environment's IP.
+**Solution:** Configure `express-rate-limit` to bypass checks when in the testing environment by adding `skip: () => process.env.NODE_ENV === 'test'` to the limiter options in `app.ts`.
+
+### 3. Test State Leakage in In-Memory Datastores
+**Symptom:** Backend service tests fail on simple counts (e.g., `Expected: 2, Received: 16`), despite the specific `describe` block only creating 2 records.
+**Cause:** The service layer uses a persistent in-memory Map or Array to store data. Because Jest maintains the Node process during the test run, data from earlier test blocks remains in memory, polluting later assertions.
+**Solution:** Create a testing-only teardown method in the service (e.g., `clearAll()`) that empties the datastore, and call it inside a `beforeEach()` block in the test file. Ensure this method is heavily gated by `if (process.env.NODE_ENV === 'test')`.
+
+### 4. Timestamp Race Conditions
+**Symptom:** Tests asserting that an `updatedAt` timestamp is `toBeGreaterThan` a `createdAt` timestamp fail randomly, reporting both timestamps as identical.
+**Cause:** Modern processors execute the object creation and subsequent status update within the exact same millisecond. Furthermore, if the test queries the object by reference rather than value, updating the status modifies the original object in place.
+**Solution:** In the test, capture the initial state. Manually manipulate the initial object's timestamp 1 second into the past (`pastTime.setSeconds(pastTime.getSeconds() - 1)`), convert it back using `.toISOString()`, and save it to an immutable primitive string variable *before* executing the backend update logic.
