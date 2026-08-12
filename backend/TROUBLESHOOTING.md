@@ -39,3 +39,22 @@ This document tracks environmental quirks, dependency conflicts, and developer "
 **Symptom:** Tests asserting that an `updatedAt` timestamp is `toBeGreaterThan` a `createdAt` timestamp fail randomly, reporting both timestamps as identical.
 **Cause:** Modern processors execute the object creation and subsequent status update within the exact same millisecond. Furthermore, if the test queries the object by reference rather than value, updating the status modifies the original object in place.
 **Solution:** In the test, capture the initial state. Manually manipulate the initial object's timestamp 1 second into the past (`pastTime.setSeconds(pastTime.getSeconds() - 1)`), convert it back using `.toISOString()`, and save it to an immutable primitive string variable *before* executing the backend update logic.
+
+## Issue 4: Code Extraction Engine (Babel AST)
+
+### 1. Babel TypeScript Type Definitions (Strict Mode Errors)
+**Symptom:** Compiling AST helper functions throws errors like `Property 'typeAnnotation' does not exist on type 'Identifier'` or `TS6133: 'context' is declared but its value is never read`.
+**Cause:** The `@babel/types` package definitions are highly strict. Babel is primarily a JavaScript tool, so when analyzing TypeScript, its type definitions don't natively anticipate TypeScript-specific nodes like `typeAnnotation` on standard JS identifiers. Additionally, strict TS configuration throws errors on unused method parameters.
+**Solution:** 
+1. Use type assertion `(node as any)` temporarily when extracting TypeScript-specific properties from Babel nodes to satisfy the compiler.
+2. Prefix intentionally unused variables with an underscore (e.g., `_context`, `_params`) to signal to the TypeScript compiler that the omission is deliberate.
+
+### 2. Babel Deprecation Warnings in Terminal
+**Symptom:** The development server logs output a yellow warning: `` `isNumberLiteral` has been deprecated, please migrate to `isNumericLiteral` ``.
+**Cause:** A recent update to the Babel ecosystem renamed the validator method for numbers. 
+**Solution:** Update any AST traversal conditions checking for numbers from `t.isNumberLiteral(node)` to `t.isNumericLiteral(node)`.
+
+### 3. API Response Race Conditions (Failing Upload Tests)
+**Symptom:** Tests expecting an extraction status of `"processing"` fail because they receive `"completed"`, or export tests fail because results are available instantly.
+**Cause:** The API controller was synchronously `await`ing the heavy AST processing logic to finish before returning a response to the user. This effectively froze the server, causing the file to finish extracting entirely before the initial HTTP `201 Created` response was ever sent.
+**Solution:** Implement the extraction as a "fire-and-forget" background task. Remove the `await` keyword from the actual execution call (`CodeExtractionController.processExtraction(id).catch(...)`) so the server instantly returns the `processing` status while the heavy lifting happens behind the scenes. *Note: You must still keep the `await` on the dynamic import (`await import(...)`) so the module loads into memory before execution.*
