@@ -152,7 +152,7 @@ export class CodeExtractorService {
         } else if (
           t.isIdentifier(path.node.id) &&
           (t.isStringLiteral(path.node.init) ||
-            t.isNumberLiteral(path.node.init) ||
+            t.isNumericLiteral(path.node.init) ||
             t.isBooleanLiteral(path.node.init) ||
             t.isArrayExpression(path.node.init) ||
             t.isObjectExpression(path.node.init))
