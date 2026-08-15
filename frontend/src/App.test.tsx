@@ -1,12 +1,13 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
 import App from './App';
+
+// Wipe the fake browser clean after each test
+afterEach(cleanup);
 
 describe('App Component', () => {
   it('redirects unauthenticated users to the login page', () => {
     render(<App />);
-    
-    // Expects to see the Login page subtitle
     expect(screen.getByText(/Extract code smarter/i)).toBeDefined();
   });
 
