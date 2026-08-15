@@ -140,3 +140,12 @@ During the implementation of our authentication flows, we resolved a few specifi
 * **Symptom:** `App.test.tsx` fails with `Unable to find an element with the text: /Welcome to Parsnipt/i`.
 * **Cause:** The implementation of `ProtectedRoute` successfully restricted unauthenticated access, immediately redirecting the test runner away from the Home page to the Login page.
 * **Fix:** Updated the assertions in `App.test.tsx` to expect the text from the Login page (`/Extract code smarter/i`) instead of the Home page to reflect the new default routing behavior.
+
+## Issue 9 Results Display & Monaco Editor
+
+During the implementation of the code preview interface, we had to handle environment limitations regarding heavy third-party browser components in our test suite.
+
+### 1. Monaco Editor Crashing jsdom
+* **Symptom:** Tests rendering the `CodePreview` component crash Vitest immediately because `jsdom` lacks the complex web APIs required to render the full Monaco Editor.
+* **Cause:** `@monaco-editor/react` tries to mount real browser-based text editing engine nodes that don't exist in a headless Node environment.
+* **Fix:** Utilized `vi.mock()` at the top of the test file to intercept imports of `@monaco-editor/react` and replace them with a simple, safe `<div>` dummy component during test execution.

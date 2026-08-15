@@ -10,12 +10,31 @@ export interface User {
   createdAt: string;
 }
 
+export type CodeType = 'function' | 'component' | 'utility' | 'constant';
+
+export interface CodeItem {
+  id: string;
+  name: string;
+  type: CodeType;
+  code: string;
+  lineCount: number;
+  complexity: string;
+  startLine: number;
+  endLine: number;
+}
+
 export interface Extraction {
-  id: string;
-  fileName: string;
-  status: 'processing' | 'completed' | 'failed';
-  results?: ExtractionResults;
-  createdAt: string;
+  id: string;
+  userId: string;
+  status: 'processing' | 'completed' | 'failed';
+  error?: string;
+  createdAt: string;
+  extractionResults?: {
+    functions: CodeItem[];
+    components: CodeItem[];
+    utilities: CodeItem[];
+    constants: CodeItem[];
+  };
 }
 
 export interface ExtractionResults {
