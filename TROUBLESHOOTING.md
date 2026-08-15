@@ -140,3 +140,17 @@ During the implementation of our authentication flows, we resolved a few specifi
 * **Symptom:** `App.test.tsx` fails with `Unable to find an element with the text: /Welcome to Parsnipt/i`.
 * **Cause:** The implementation of `ProtectedRoute` successfully restricted unauthenticated access, immediately redirecting the test runner away from the Home page to the Login page.
 * **Fix:** Updated the assertions in `App.test.tsx` to expect the text from the Login page (`/Extract code smarter/i`) instead of the Home page to reflect the new default routing behavior.
+
+## Issue #8 Upload Component & Testing 
+
+During the implementation of the drag-and-drop upload feature, we encountered two testing environment anomalies specific to Vitest and React Testing Library.
+
+### 1. Windows Drive Letter Casing Bug in Vitest
+* **Symptom:** All tests instantly crash at the first `describe` block with `TypeError: Cannot read properties of undefined (reading 'config')`.
+* **Cause:** Vitest (v4.1.10) on Windows contains a path normalization bug. If the terminal is operating from a lowercase drive letter (e.g., `c:\`), Vitest loads duplicate, uninitialized CLI contexts into memory, breaking the `jsdom` environment.
+* **Fix:** Enforced uppercase drive letter usage in the Windows terminal (e.g., running `cd /d C:\Users\...`) before executing the test suite.
+
+### 2. React Testing Library DOM Ghosting
+* **Symptom:** Tests fail with `TestingLibraryElementError: Found multiple elements with the text...`
+* **Cause:** Without a global test setup configuration to automatically clear the DOM, components from previous test cases remained mounted in the `jsdom` fake browser, causing query collisions on subsequent tests.
+* **Fix:** Explicitly imported `cleanup` from `@testing-library/react` and `afterEach` from `vitest`, implementing manual cleanup (`afterEach(cleanup)`) at the top of affected test files.
