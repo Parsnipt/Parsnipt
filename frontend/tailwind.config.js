@@ -10,6 +10,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          cream: '#F6F6F2',
+          darkGreen: '#3A572C',
+          mediumGreen: '#6B994D',
+          brown: '#9E6C21',
+          darkBrown: '#422A14',
+        },
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',

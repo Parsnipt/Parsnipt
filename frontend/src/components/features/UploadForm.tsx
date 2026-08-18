@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useExtractionStore } from '../../store/extractionStore';
 import apiClient from '../../services/api';
 import FileInput from '../common/FileInput';
 import ProgressBar from '../common/ProgressBar';
 
 export default function UploadForm() {
+  const navigate = useNavigate();
   const { addExtraction, setLoading } = useExtractionStore();
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +49,13 @@ export default function UploadForm() {
         },
       });
 
-      if (response.data.success) {
-        addExtraction(response.data.data);
+      const extractionData = response.data.data || response.data;
+
+      if (extractionData && extractionData.id) {
+        addExtraction(extractionData);
         setProgress(0);
+
+        navigate(`/results/${extractionData.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');

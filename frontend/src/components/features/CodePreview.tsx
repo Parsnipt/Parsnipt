@@ -67,7 +67,7 @@ export default function CodePreview({ item }: Props) {
           <div className="h-[300px] w-full border-b border-gray-200">
             <Editor
               height="100%"
-              language="typescript" // Defaults to TS to handle both JS and TS perfectly
+              language="typescript" // Defaults to TS to handle both JS and TS
               theme="vs-dark"
               value={item.code}
               options={{
