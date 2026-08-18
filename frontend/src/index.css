@@ -6,30 +6,46 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* The brand cream background and dark green default text */
+  body {
+    @apply bg-brand-cream text-brand-darkGreen antialiased;
+  }
+
+  /* Unified header colors */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-brand-darkGreen;
+  }
+
+  /* Default link colors */
+  a {
+    @apply text-brand-mediumGreen hover:text-brand-darkGreen transition-colors;
+  }
+}
+
 /* Custom utility classes */
 @layer components {
   .btn-primary {
-    @apply px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors;
+    /* Medium Green background, Dark Green hover, Cream text */
+    @apply px-4 py-2 bg-brand-mediumGreen text-brand-cream rounded-lg font-semibold hover:bg-brand-darkGreen transition-colors duration-200;
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors;
+    /* Brown outline, transparent background, fills with Brown on hover */
+    @apply px-4 py-2 border-2 border-brand-brown bg-transparent text-brand-brown rounded-lg font-semibold hover:bg-brand-brown hover:text-brand-cream transition-colors duration-200;
   }
 
   .input-base {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500;
+    /* Green border, snaps to strong brand green on focus */
+    @apply w-full px-4 py-2 border border-brand-mediumGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-mediumGreen bg-white;
   }
 
   .container-narrow {
     @apply container mx-auto px-4 max-w-2xl;
   }
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  @apply bg-white text-gray-900 antialiased;
 }

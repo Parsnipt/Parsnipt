@@ -154,3 +154,12 @@ During the implementation of the drag-and-drop upload feature, we encountered tw
 * **Symptom:** Tests fail with `TestingLibraryElementError: Found multiple elements with the text...`
 * **Cause:** Without a global test setup configuration to automatically clear the DOM, components from previous test cases remained mounted in the `jsdom` fake browser, causing query collisions on subsequent tests.
 * **Fix:** Explicitly imported `cleanup` from `@testing-library/react` and `afterEach` from `vitest`, implementing manual cleanup (`afterEach(cleanup)`) at the top of affected test files.
+
+## Issue 9 Results Display & Monaco Editor
+
+During the implementation of the code preview interface, we had to handle environment limitations regarding heavy third-party browser components in our test suite.
+
+### 1. Monaco Editor Crashing jsdom
+* **Symptom:** Tests rendering the `CodePreview` component crash Vitest immediately because `jsdom` lacks the complex web APIs required to render the full Monaco Editor.
+* **Cause:** `@monaco-editor/react` tries to mount real browser-based text editing engine nodes that don't exist in a headless Node environment.
+* **Fix:** Utilized `vi.mock()` at the top of the test file to intercept imports of `@monaco-editor/react` and replace them with a simple, safe `<div>` dummy component during test execution.

@@ -40,7 +40,6 @@ export default function FileInput({
     const files = e.currentTarget.files;
     if (files?.length) {
       onFileSelect(files[0]);
-      // Reset input so the same file can be selected again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -52,23 +51,24 @@ export default function FileInput({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
+      className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-200 ${
         isDragging
-          ? 'border-primary-500 bg-primary-50'
-          : 'border-gray-300 hover:border-primary-400'
+          ? 'border-brand-darkGreen bg-brand-mediumGreen/10'
+          : 'border-brand-mediumGreen/40 hover:border-brand-mediumGreen'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      <div className="mb-4">
-        <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="mb-4">        
+        <svg className="w-12 h-12 mx-auto text-brand-mediumGreen/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       </div>
 
-      <p className="text-lg font-semibold text-gray-700 mb-2">
+      <p className="text-lg font-semibold text-brand-darkGreen mb-2">
         Drag and drop your file here
       </p>
-      <p className="text-gray-500 mb-4">or</p>
+      <p className="text-brand-brown mb-4">or</p>
 
+      {/* Uses the global btn-primary from index.css */}
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
@@ -87,10 +87,10 @@ export default function FileInput({
         disabled={disabled}
       />
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-brand-brown/80">
         Allowed types: {allowedTypes.join(', ')}
       </p>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-brand-brown/80 mt-1">
         Max size: {maxSizeText}
       </p>
     </div>
