@@ -109,6 +109,11 @@ export class FileService {
     extractionId: string
   ): Promise<string> {
     try {
+
+      if (!this.validateExtension(fileName)) {
+        throw new ValidationError('Invalid file type. Defense-in-depth validation failed.');
+      }
+
       await this.ensureUploadDir();
 
       const filePath = this.generateTempFilePath(fileName, extractionId);

@@ -15,7 +15,6 @@ export default function ResultsDisplay({ extraction }: Props) {
   const results = useMemo(() => {
     if (!extraction.extractionResults) return [];
 
-    // Flatten all categories into a single array
     let items = [
       ...extraction.extractionResults.functions,
       ...extraction.extractionResults.components,
@@ -23,12 +22,10 @@ export default function ResultsDisplay({ extraction }: Props) {
       ...extraction.extractionResults.constants,
     ];
 
-    // Apply category filter
     if (filterType !== 'all') {
       items = items.filter((item) => item.type === filterType);
     }
 
-    // Apply search filter (checks both name and code snippet)
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       items = items.filter(
@@ -41,77 +38,83 @@ export default function ResultsDisplay({ extraction }: Props) {
     return items;
   }, [extraction.extractionResults, filterType, searchTerm]);
 
-  // Loading state
   if (extraction.status === 'processing') {
     return (
       <div className="text-center py-12">
         <div className="inline-block animate-spin">
-          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full" />
+          <div className="w-8 h-8 border-4 border-brand-mediumGreen border-t-transparent rounded-full" />
         </div>
-        <p className="mt-4 text-gray-600 font-medium">Processing your code...</p>
+        <p className="mt-4 text-brand-darkGreen font-medium">Processing your code...</p>
       </div>
     );
   }
 
-  // Error state
   if (extraction.status === 'failed') {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm">
         Extraction failed: {extraction.error || 'Unknown error occurred.'}
       </div>
     );
   }
 
-  // Empty state if no results exist yet
   if (!extraction.extractionResults) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-brand-brown/70 bg-white rounded-2xl shadow-xl border border-brand-darkBrown/20">
         No extraction results available.
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filter Controls */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <input
-          type="text"
-          placeholder="Search components, functions, or code..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="input-base flex-1"
-        />
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value as FilterOption)}
-          className="input-base md:w-48"
-        >
-          <option value="all">All Items</option>
-          <option value="function">Functions</option>
-          <option value="component">Components</option>
-          <option value="utility">Utilities</option>
-          <option value="constant">Constants</option>
-        </select>
+    <div className="space-y-8">      
+      <div className="bg-white p-8 rounded-2xl shadow-xl shadow-brand-darkBrown/10 border-2 border-brand-brown/70 space-y-6">        
+        
+        <div className="flex flex-col md:flex-row gap-4">
+          <input
+            type="text"
+            placeholder="Search components, functions, or code..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-base flex-1"
+          />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as FilterOption)}
+            className="input-base md:w-48 text-brand-darkGreen"
+          >
+            <option value="all">All Items</option>
+            <option value="function">Functions</option>
+            <option value="component">Components</option>
+            <option value="utility">Utilities</option>
+            <option value="constant">Constants</option>
+          </select>
+        </div>
+        
+        <div className="pt-6 border-t-2 border-brand-brown/50">
+          <h1 className="text-2xl font-bold text-brand-darkGreen mb-1 tracking-tight">Extraction Results</h1>
+          <p className="text-brand-brown text-sm">
+            ID: <span className="font-mono text-brand-darkGreen/70">{extraction.id}</span>
+          </p>
+        </div>
       </div>
-
-      {/* Results List */}
-      <div className="flex flex-col gap-2">
-        {results.map((item) => (
-          <CodePreview key={item.id} item={item} />
+      
+      <div className="flex flex-col gap-6">
+        {results.map((item) => (          
+          <div key={item.id} className="rounded-xl shadow-lg shadow-brand-darkBrown/20 border-2 border-brand-brown/70 overflow-hidden bg-white">
+            <CodePreview item={item} />
+          </div>
         ))}
       </div>
-
-      {/* No match state */}
+      
       {results.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-gray-500 font-medium">No items match your search criteria.</p>
+        <div className="text-center py-12 bg-white/50 rounded-2xl border border-brand-mediumGreen/20 shadow-sm">
+          <p className="text-brand-brown font-medium">No items match your search criteria.</p>
           <button 
             onClick={() => {
               setSearchTerm('');
               setFilterType('all');
             }}
-            className="mt-2 text-primary-600 hover:text-primary-700 text-sm font-semibold"
+            className="mt-3 text-brand-mediumGreen hover:text-brand-darkGreen text-sm font-semibold uppercase tracking-wide transition-colors"
           >
             Clear filters
           </button>

@@ -1,45 +1,64 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useExtractionStore } from '../store/extractionStore';
+import apiClient from '../services/api';
 import ResultsDisplay from '../components/features/ResultsDisplay';
+import { Extraction } from '../types';
 
 export default function Results() {
-  // Grab the ID from the URL (e.g., /results/123)
   const { id } = useParams<{ id: string }>();
-  
-  // Find the matching extraction in our global store
-  const extraction = useExtractionStore((state) =>
-    state.extractions.find((e) => e.id === id)
-  );
+  const [extraction, setExtraction] = useState<Extraction | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fallback if the user types in a bad ID or refreshes and clears the store
-  if (!extraction) {
+  useEffect(() => {
+    const fetchExtraction = async () => {
+      try {
+        const response = await apiClient.get(`/extractions/${id}`);
+        const data = response.data.data || response.data;
+        setExtraction(data);
+      } catch (err) {
+        console.error("Error fetching extraction:", err);
+        setError("Could not find this extraction.");
+      }
+    };
+
+    fetchExtraction();
+
+    let interval: NodeJS.Timeout;
+    if (extraction && extraction.status === 'processing') {
+      interval = setInterval(fetchExtraction, 2000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [id, extraction?.status]);
+
+  if (error) {
     return (
       <div className="container mx-auto px-4 py-16 text-center max-w-lg">
-        <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Extraction Not Found</h2>
-          <p className="text-gray-600 mb-6">
-            We couldn't find the results you're looking for. The extraction may have been deleted or expired.
-          </p>
-          <Link to="/" className="btn-primary inline-block">
-            Back to Dashboard
-          </Link>
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-brand-darkBrown/20">
+          <h2 className="text-2xl font-bold text-brand-darkGreen mb-2">Extraction Not Found</h2>
+          <p className="text-brand-brown mb-6">{error}</p>
+          <Link to="/" className="btn-primary inline-block">Back to Dashboard</Link>
         </div>
+      </div>
+    );
+  }
+
+  if (!extraction) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-4 border-brand-mediumGreen border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Extraction Results</h1>
-          <p className="text-gray-500 text-sm">
-            ID: <span className="font-mono">{extraction.id}</span>
-          </p>
-        </div>
+      <div className="mb-6 flex justify-end">
         <Link 
           to="/" 
-          className="text-primary-600 hover:text-primary-800 font-medium flex items-center gap-2 transition"
+          className="text-brand-mediumGreen hover:text-brand-darkGreen font-medium flex items-center gap-2 transition-colors uppercase tracking-wide text-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -48,7 +67,6 @@ export default function Results() {
         </Link>
       </div>
 
-      {/* Render the list manager built in Step 4 */}
       <ResultsDisplay extraction={extraction} />
     </div>
   );

@@ -8,12 +8,12 @@ export default function ProgressBar({ progress }: ProgressBarProps) {
   return (
     <div className="mt-4">
       <div className="flex justify-between mb-2">
-        <span className="text-sm font-medium">Uploading...</span>
-        <span className="text-sm">{progress}%</span>
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+        <span className="text-sm font-medium text-brand-darkGreen">Uploading & Extracting...</span>
+        <span className="text-sm font-medium text-brand-darkGreen">{progress}%</span>
+      </div>      
+      <div className="w-full bg-brand-mediumGreen/20 rounded-full h-2">
         <div
-          className="bg-primary-600 h-2 rounded-full transition-all"
+          className="bg-brand-mediumGreen h-2 rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>

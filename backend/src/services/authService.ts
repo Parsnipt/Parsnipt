@@ -20,21 +20,26 @@ import {
 } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 
-// In-memory user store (replace with database in Issue #5)
+// In-memory user store (replaced with database in Issue #5)
 // This is temporary for testing purposes
 const users = new Map<string, UserWithPassword>();
 
 // Pre-populated test user for development
-const testUser: UserWithPassword = {
-  id: 'test-user-123',
-  email: 'test@example.com',
-  name: 'Test User',
-  tier: 'free',
-  passwordHash: bcryptjs.hashSync('password123', 10),
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+if (process.env.NODE_ENV !== 'production') {
+  const testUser: UserWithPassword = {
+    id: 'test-user-123',
+    email: 'test@example.com',
+    name: 'Test User',
+    tier: 'free',
+    passwordHash: bcryptjs.hashSync('password123', 10),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
 users.set(testUser.id, testUser);
+
+console.log('Running in Development Mode: Test user account injected.');
+};
 
 export class AuthService {
   /**
@@ -87,9 +92,18 @@ export class AuthService {
    * Generate JWT tokens
    */
   private static generateTokens(userId: string, email: string): AuthTokens {
-    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-    const refreshSecret = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret-change-in-production';
-    const expiresIn = 86400; // 24 hours in seconds
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+    console.error('🔥 FATAL ERROR: JWT_SECRET environment variable is not set.');
+    process.exit(1); // Kills the server immediately
+    }
+
+    const refreshSecret = process.env.REFRESH_TOKEN_SECRET;
+    if (!refreshSecret) {
+    console.error('🔥 FATAL ERROR: REFRESH_TOKEN_SECRET environment variable is not set.');
+    process.exit(1); // Kills the server immediately
+    }
+    const expiresIn = 86400; // 24 hours in seconds
 
     const accessToken = jwt.sign(
       { userId, email },
