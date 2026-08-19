@@ -141,24 +141,10 @@ During the implementation of our authentication flows, we resolved a few specifi
 * **Cause:** The implementation of `ProtectedRoute` successfully restricted unauthenticated access, immediately redirecting the test runner away from the Home page to the Login page.
 * **Fix:** Updated the assertions in `App.test.tsx` to expect the text from the Login page (`/Extract code smarter/i`) instead of the Home page to reflect the new default routing behavior.
 
-## Issue #8 Upload Component & Testing 
-
-During the implementation of the drag-and-drop upload feature, we encountered two testing environment anomalies specific to Vitest and React Testing Library.
-
-### 1. Windows Drive Letter Casing Bug in Vitest
-* **Symptom:** All tests instantly crash at the first `describe` block with `TypeError: Cannot read properties of undefined (reading 'config')`.
-* **Cause:** Vitest (v4.1.10) on Windows contains a path normalization bug. If the terminal is operating from a lowercase drive letter (e.g., `c:\`), Vitest loads duplicate, uninitialized CLI contexts into memory, breaking the `jsdom` environment.
-* **Fix:** Enforced uppercase drive letter usage in the Windows terminal (e.g., running `cd /d C:\Users\...`) before executing the test suite.
-
-### 2. React Testing Library DOM Ghosting
-* **Symptom:** Tests fail with `TestingLibraryElementError: Found multiple elements with the text...`
-* **Cause:** Without a global test setup configuration to automatically clear the DOM, components from previous test cases remained mounted in the `jsdom` fake browser, causing query collisions on subsequent tests.
-* **Fix:** Explicitly imported `cleanup` from `@testing-library/react` and `afterEach` from `vitest`, implementing manual cleanup (`afterEach(cleanup)`) at the top of affected test files.
-
 ## Issue 7 - Refactor (08/26)- Authentication Implementation 
 
 ### Vite Import Resolution Errors
-* **Symptom:** Vite build crashes or TypeScript throws "Cannot find module" errors on local files.
+**Symptom:** Vite build crashes or TypeScript throws "Cannot find module" errors on local files.
 **Cause:** Node.js-style ESM imports with `.js` extensions were utilized inside a Vite React environment, which expects extensionless imports for `.ts` and `.tsx` files.
 **Solution:** Strip all `.js` extensions from local module imports in frontend `.ts` and `.tsx` files.
 
@@ -176,7 +162,19 @@ During the implementation of the drag-and-drop upload feature, we encountered tw
 1. Use `fireEvent.submit(button)` instead of `click()` to properly trigger React's event handlers.
 2. Import `cleanup` from `@testing-library/react` and call it via `afterEach(cleanup)` to wipe the DOM between test runs.
 
+## Issue #8 Upload Component & Testing 
 
+During the implementation of the drag-and-drop upload feature, we encountered two testing environment anomalies specific to Vitest and React Testing Library.
+
+### 1. Windows Drive Letter Casing Bug in Vitest
+* **Symptom:** All tests instantly crash at the first `describe` block with `TypeError: Cannot read properties of undefined (reading 'config')`.
+* **Cause:** Vitest (v4.1.10) on Windows contains a path normalization bug. If the terminal is operating from a lowercase drive letter (e.g., `c:\`), Vitest loads duplicate, uninitialized CLI contexts into memory, breaking the `jsdom` environment.
+* **Fix:** Enforced uppercase drive letter usage in the Windows terminal (e.g., running `cd /d C:\Users\...`) before executing the test suite.
+
+### 2. React Testing Library DOM Ghosting
+* **Symptom:** Tests fail with `TestingLibraryElementError: Found multiple elements with the text...`
+* **Cause:** Without a global test setup configuration to automatically clear the DOM, components from previous test cases remained mounted in the `jsdom` fake browser, causing query collisions on subsequent tests.
+* **Fix:** Explicitly imported `cleanup` from `@testing-library/react` and `afterEach` from `vitest`, implementing manual cleanup (`afterEach(cleanup)`) at the top of affected test files.
 
 ## Issue 9 Results Display & Monaco Editor
 
