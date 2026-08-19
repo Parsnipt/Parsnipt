@@ -1,28 +1,96 @@
+/**
+ * Login form component
+ * Handles user login with email and password
+ */
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { authService } from '../../services/auth';
+import authService from '../../services/auth';
+import { LoginRequest } from '../../types/auth';
 
 export default function LoginForm() {
   const navigate = useNavigate();
   const { setUser, setLoading, setError, clearError } = useAuthStore();
 
+  // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  /**
+   * Validate email format
+   */
+  const validateEmail = (emailToCheck: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailToCheck);
+  };
+
+  /**
+   * Validate form inputs before submission
+   */
+  const validateForm = (): string | null => {
+    if (!email.trim()) {
+      return 'Email is required';
+    }
+
+    if (!validateEmail(email)) {
+      return 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      return 'Password is required';
+    }
+
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return null;
+  };
+
+  /**
+   * Handle form submission
+   */
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearError();
+    setLocalError(null);
+
+    // Validate form
+    const validationError = validateForm();
+    if (validationError) {
+      setLocalError(validationError);
+      return;
+    }
+
     setIsSubmitting(true);
     setLoading(true);
 
     try {
-      const result = await authService.login({ email, password });
+      // Call login API
+      const loginData: LoginRequest = {
+        email: email.trim(),
+        password,
+      };
+
+      const result = await authService.login(loginData);
+
+      // Store user in state
       setUser(result.user);
-      navigate('/');
+
+      // Clear form
+      setEmail('');
+      setPassword('');
+      setLocalError(null);
+
+      // Redirect to home page
+      navigate('/', { replace: true });
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Login failed');
+      const errorMessage =
+        error instanceof Error ? error.message : 'Login failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -31,22 +99,44 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Error alert */}
+      {localError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center">
+          <span>{localError}</span>
+          <button
+            type="button"
+            onClick={() => setLocalError(null)}
+            className="font-bold text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Email field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          Email Address
         </label>
         <input
           type="email"
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={() => setLocalError(null)}
           className="input-base"
+          placeholder="your@email.com"
+          disabled={isSubmitting}
           required
         />
+        <p className="text-xs text-gray-500 mt-1">
+          We'll never share your email with anyone else.
+        </p>
       </div>
 
+      {/* Password field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
           Password
         </label>
         <input
@@ -54,17 +144,28 @@ export default function LoginForm() {
           id="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onFocus={() => setLocalError(null)}
           className="input-base"
+          placeholder="••••••••"
+          disabled={isSubmitting}
           required
         />
       </div>
 
+      {/* Submit button */}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="btn-primary w-full"
+        className={`btn-primary w-full ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
       >
-        {isSubmitting ? 'Logging in...' : 'Login'}
+        {isSubmitting ? (
+          <span className="flex items-center justify-center">
+            <span className="animate-spin mr-2">⟳</span>
+            Logging in...
+          </span>
+        ) : (
+          'Login'
+        )}
       </button>
     </form>
   );

@@ -1,44 +1,141 @@
-import { useState } from 'react';
+/**
+ * Register form component
+ * Handles new user registration with validation
+ */
+
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { authService } from '../../services/auth';
+import authService from '../../services/auth';
+import { RegisterRequest } from '../../types/auth';
+
+interface PasswordStrength {
+  score: number; // 0-4
+  text: string;
+  color: string;
+  requirements: {
+    minLength: boolean;
+    hasUppercase: boolean;
+    hasLowercase: boolean;
+    hasNumber: boolean;
+  };
+}
 
 export default function RegisterForm() {
   const navigate = useNavigate();
   const { setUser, setLoading, setError, clearError } = useAuthStore();
 
+  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const validatePassword = (pwd: string): string | null => {
-    if (pwd.length < 8) return 'Password must be at least 8 characters';
-    if (!/[A-Z]/.test(pwd)) return 'Password must contain uppercase letter';
-    if (!/[a-z]/.test(pwd)) return 'Password must contain lowercase letter';
-    if (!/[0-9]/.test(pwd)) return 'Password must contain number';
-    return null;
+  /**
+   * Validate email format
+   */
+  const validateEmail = (emailToCheck: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailToCheck);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
+  /**
+   * Calculate password strength
+   */
+  const passwordStrength = useMemo((): PasswordStrength => {
+    const requirements = {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    };
 
-    // Validate
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
+    const metRequirements = Object.values(requirements).filter(Boolean).length;
+    const score = metRequirements;
+
+    let text = 'Weak';
+    let color = 'text-red-600';
+
+    if (score === 2) {
+      text = 'Fair';
+      color = 'text-orange-600';
+    } else if (score === 3) {
+      text = 'Good';
+      color = 'text-yellow-600';
+    } else if (score === 4) {
+      text = 'Strong';
+      color = 'text-green-600';
     }
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      setError(passwordError);
-      return;
+    return { score, text, color, requirements };
+  }, [password]);
+
+  /**
+   * Validate form inputs before submission
+   */
+  const validateForm = (): string | null => {
+    if (!name.trim()) {
+      return 'Full name is required';
+    }
+
+    if (name.trim().length < 2) {
+      return 'Name must be at least 2 characters';
+    }
+
+    if (!email.trim()) {
+      return 'Email is required';
+    }
+
+    if (!validateEmail(email)) {
+      return 'Please enter a valid email address';
+    }
+
+    if (!password) {
+      return 'Password is required';
+    }
+
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+
+    if (!/[a-z]/.test(password)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return 'Password must contain at least one number';
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      return 'Passwords do not match';
+    }
+
+    if (!agreedToTerms) {
+      return 'You must agree to the terms and conditions';
+    }
+
+    return null;
+  };
+
+  /**
+   * Handle form submission
+   */
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    clearError();
+    setLocalError(null);
+
+    // Validate form
+    const validationError = validateForm();
+    if (validationError) {
+      setLocalError(validationError);
       return;
     }
 
@@ -46,11 +143,32 @@ export default function RegisterForm() {
     setLoading(true);
 
     try {
-      const result = await authService.register({ name, email, password });
+      // Call register API
+      const registerData: RegisterRequest = {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      };
+
+      const result = await authService.register(registerData);
+
+      // Store user in state
       setUser(result.user);
-      navigate('/');
+
+      // Clear form
+      setName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setAgreedToTerms(false);
+      setLocalError(null);
+
+      // Redirect to home page
+      navigate('/', { replace: true });
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Registration failed');
+      const errorMessage =
+        error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -59,8 +177,23 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Error alert */}
+      {localError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center">
+          <span>{localError}</span>
+          <button
+            type="button"
+            onClick={() => setLocalError(null)}
+            className="font-bold text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Full Name field */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-1">
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
           Full Name
         </label>
         <input
@@ -68,27 +201,35 @@ export default function RegisterForm() {
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onFocus={() => setLocalError(null)}
           className="input-base"
+          placeholder="John Doe"
+          disabled={isSubmitting}
           required
         />
       </div>
 
+      {/* Email field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          Email Address
         </label>
         <input
           type="email"
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={() => setLocalError(null)}
           className="input-base"
+          placeholder="your@email.com"
+          disabled={isSubmitting}
           required
         />
       </div>
 
+      {/* Password field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-1">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
           Password
         </label>
         <input
@@ -96,16 +237,64 @@ export default function RegisterForm() {
           id="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onFocus={() => setLocalError(null)}
           className="input-base"
+          placeholder="••••••••"
+          disabled={isSubmitting}
           required
         />
-        <p className="text-xs text-gray-500 mt-1">
-          8+ chars, uppercase, lowercase, number
-        </p>
+
+        {/* Password strength indicator */}
+        {password && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-600">Password Strength:</span>
+              <span className={`text-xs font-bold ${passwordStrength.color}`}>
+                {passwordStrength.text}
+              </span>
+            </div>
+
+            {/* Strength bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  passwordStrength.score === 1
+                    ? 'bg-red-500 w-1/4'
+                    : passwordStrength.score === 2
+                      ? 'bg-orange-500 w-2/4'
+                      : passwordStrength.score === 3
+                        ? 'bg-yellow-500 w-3/4'
+                        : 'bg-green-500 w-full'
+                }`}
+              />
+            </div>
+
+            {/* Requirements checklist */}
+            <div className="space-y-1">
+              <RequirementItem
+                met={passwordStrength.requirements.minLength}
+                text="At least 8 characters"
+              />
+              <RequirementItem
+                met={passwordStrength.requirements.hasUppercase}
+                text="One uppercase letter (A-Z)"
+              />
+              <RequirementItem
+                met={passwordStrength.requirements.hasLowercase}
+                text="One lowercase letter (a-z)"
+              />
+              <RequirementItem
+                met={passwordStrength.requirements.hasNumber}
+                text="One number (0-9)"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Confirm Password field */}
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
           Confirm Password
         </label>
         <input
@@ -113,18 +302,82 @@ export default function RegisterForm() {
           id="confirmPassword"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          onFocus={() => setLocalError(null)}
           className="input-base"
+          placeholder="••••••••"
+          disabled={isSubmitting}
           required
         />
+        {password && confirmPassword && password !== confirmPassword && (
+          <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
+        )}
+        {password && confirmPassword && password === confirmPassword && (
+          <p className="text-xs text-green-600 mt-1">✓ Passwords match</p>
+        )}
       </div>
 
+      {/* Terms agreement checkbox */}
+      <div className="flex items-start">
+        <input
+          type="checkbox"
+          id="terms"
+          checked={agreedToTerms}
+          onChange={(e) => setAgreedToTerms(e.target.checked)}
+          className="mt-1 mr-2"
+          disabled={isSubmitting}
+        />
+        <label htmlFor="terms" className="text-xs text-gray-600">
+          I agree to the{' '}
+          <a href="#" className="text-primary-600 hover:underline">
+            Terms and Conditions
+          </a>{' '}
+          and{' '}
+          <a href="#" className="text-primary-600 hover:underline">
+            Privacy Policy
+          </a>
+        </label>
+      </div>
+
+      {/* Submit button */}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="btn-primary w-full"
+        className={`btn-primary w-full ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
       >
-        {isSubmitting ? 'Creating account...' : 'Register'}
+        {isSubmitting ? (
+          <span className="flex items-center justify-center">
+            <span className="animate-spin mr-2">⟳</span>
+            Creating account...
+          </span>
+        ) : (
+          'Create Account'
+        )}
       </button>
     </form>
+  );
+}
+
+/**
+ * Requirement checklist item component
+ */
+interface RequirementItemProps {
+  met: boolean;
+  text: string;
+}
+
+function RequirementItem({ met, text }: RequirementItemProps) {
+  return (
+    <div className="flex items-center text-xs">
+      <span
+        className={`mr-2 font-bold ${
+          met ? 'text-green-600' : 'text-gray-400'
+        }`}
+      >
+        {met ? '✓' : '○'}
+      </span>
+      <span className={met ? 'text-gray-700' : 'text-gray-500'}>
+        {text}
+      </span>
+    </div>
   );
 }

@@ -141,6 +141,29 @@ During the implementation of our authentication flows, we resolved a few specifi
 * **Cause:** The implementation of `ProtectedRoute` successfully restricted unauthenticated access, immediately redirecting the test runner away from the Home page to the Login page.
 * **Fix:** Updated the assertions in `App.test.tsx` to expect the text from the Login page (`/Extract code smarter/i`) instead of the Home page to reflect the new default routing behavior.
 
+## Issue 7 - Refactor (08/26)- Authentication Implementation 
+
+### Vite Import Resolution Errors
+* **Symptom:** Vite build crashes or TypeScript throws "Cannot find module" errors on local files.
+**Cause:** Node.js-style ESM imports with `.js` extensions were utilized inside a Vite React environment, which expects extensionless imports for `.ts` and `.tsx` files.
+**Solution:** Strip all `.js` extensions from local module imports in frontend `.ts` and `.tsx` files.
+
+### Duplicate & Disappearing Form Errors
+**Symptom:** API error messages render twice (global and local) and disappear instantly when inputs re-enable.
+**Cause:** A state conflict occurs between local component error tracking and global Zustand error tracking. This is compounded by `onFocus` clear handlers triggering immediately when the browser returns focus to the input field after a failed submission.
+**Solution:** Route all API-level `catch` errors exclusively to the global `useAuthStore` error state, reserving local state strictly for client-side field validation.
+
+### JSDOM Form Validation Test Failures
+**Symptom:** React Testing Library tests fail to catch required field validation errors, or components render multiple times causing "multiple elements found" errors.
+**Cause:** 
+1. Simulating `fireEvent.click` on a submit button triggers the native HTML5 `required` block within JSDOM, preventing the React `onSubmit` handler from executing.
+2. Vitest does not automatically unmount components between tests by default, causing DOM bleed-over.
+**Solution:** 
+1. Use `fireEvent.submit(button)` instead of `click()` to properly trigger React's event handlers.
+2. Import `cleanup` from `@testing-library/react` and call it via `afterEach(cleanup)` to wipe the DOM between test runs.
+
+
+
 ## Issue 9 Results Display & Monaco Editor
 
 During the implementation of the code preview interface, we had to handle environment limitations regarding heavy third-party browser components in our test suite.

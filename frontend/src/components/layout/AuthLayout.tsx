@@ -1,5 +1,14 @@
+/**
+ * Auth layout component
+ * Layout for authentication pages (login, register)
+ */
+
 import { Outlet } from 'react-router-dom';
 
 export default function AuthLayout() {
-  return <Outlet />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Outlet />
+    </div>
+  );
 }
