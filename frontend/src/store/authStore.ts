@@ -1,30 +1,67 @@
+/**
+ * Authentication state management with Zustand
+ * Manages user state, loading states, and error messages
+ */
+
 import { create } from 'zustand';
-import { User } from '../types';
+import { AuthUser } from '../types/auth.js';
 
 interface AuthStore {
-  user: User | null;
+  // User data
+  user: AuthUser | null;
+  
+  // Loading and error states
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  setUser: (user: User | null) => void;
+  
+  // User actions
+  setUser: (user: AuthUser | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  logout: () => void;
   clearError: () => void;
+  logout: () => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
+  // Initial state
   user: null,
   isLoading: false,
   isAuthenticated: false,
   error: null,
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
+
+  // Actions
+  setUser: (user) => {
+    set({
+      user,
+      isAuthenticated: !!user,
+      error: null, // Clear error when user is set
+    });
+  },
+
+  setLoading: (isLoading) => {
+    set({ isLoading });
+  },
+
+  setError: (error) => {
+    set({ error });
+  },
+
+  clearError: () => {
+    set({ error: null });
+  },
+
   logout: () => {
+    // Remove tokens from localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    set({ user: null, isAuthenticated: false });
+    
+    // Reset state
+    set({
+      user: null,
+      isAuthenticated: false,
+      error: null,
+      isLoading: false,
+    });
   },
-  clearError: () => set({ error: null }),
 }));

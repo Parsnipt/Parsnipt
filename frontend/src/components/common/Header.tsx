@@ -1,49 +1,84 @@
+/**
+ * Application header
+ * Shows logo, navigation, and user info/logout
+ */
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { authService } from '../../services/auth';
+import authService from '../../services/auth';
 
 export default function Header() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
 
+  /**
+   * Handle logout
+   */
   const handleLogout = async () => {
-    await authService.logout();
-    logout();
-    navigate('/login');
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      logout();
+      navigate('/login', { replace: true });
+    }
   };
 
   return (
-    <header className="bg-brand-darkGreen text-brand-cream shadow-lg">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">        
-        <Link to="/" className="flex items-center text-2xl font-bold tracking-tight text-brand-cream hover:text-brand-cream/80 transition-colors">
-          <img src="/logo.png" alt="Parsnipt Logo" className="h-8 w-auto mr-3 rounded-full" />
-          Parsnipt
-        </Link>
-        <nav className="space-x-6 flex items-center font-medium">
-          <a href="#" className="text-brand-cream hover:text-brand-mediumGreen transition-colors uppercase text-sm tracking-wide">
-            Docs
-          </a>
-          {isAuthenticated ? (
-            <>
-              <span className="text-brand-cream uppercase text-sm tracking-wide">{user?.name}</span>
-              <button
-                onClick={handleLogout}
-                className="text-brand-cream hover:text-brand-mediumGreen transition-colors uppercase text-sm tracking-wide"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="text-brand-cream hover:text-brand-mediumGreen transition-colors uppercase text-sm tracking-wide">
-                Login
-              </Link>
-              <Link to="/register" className="btn-primary text-sm uppercase tracking-wide">
-                Register
-              </Link>
-            </>
-          )}
-        </nav>
+    <header className="bg-primary-600 text-white shadow-lg">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex justify-between items-center">
+          {/* Logo */}
+          <Link to="/" className="text-2xl font-bold hover:text-primary-100 transition">
+            Parsnipt
+          </Link>
+
+          {/* Navigation and user area */}
+          <nav className="flex items-center space-x-6">
+            {/* Documentation link */}
+            <a
+              href="https://github.com/parsnipt/parsnipt"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary-100 transition text-sm"
+            >
+              Docs
+            </a>
+
+            {/* Authenticated user section */}
+            {isAuthenticated && user ? (
+              <div className="flex items-center space-x-4 pl-4 border-l border-primary-400">
+                <div className="text-sm">
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-primary-100 text-xs">{user.tier} tier</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1 bg-primary-700 hover:bg-primary-800 rounded transition text-sm"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              /* Unauthenticated user section */
+              <div className="flex items-center space-x-4 pl-4 border-l border-primary-400">
+                <Link
+                  to="/login"
+                  className="hover:text-primary-100 transition text-sm"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 bg-primary-700 hover:bg-primary-800 rounded transition text-sm font-medium"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
+          </nav>
+        </div>
       </div>
     </header>
   );

@@ -24,6 +24,6 @@ describe('Authentication Forms', () => {
     expect(screen.getByLabelText(/Email/i)).toBeDefined();
     expect(screen.getByLabelText(/^Password/i)).toBeDefined();
     expect(screen.getByLabelText(/Confirm Password/i)).toBeDefined();
-    expect(screen.getByRole('button', { name: /Register/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Create Account/i })).toBeDefined();
   });
 });
