@@ -1,125 +1,187 @@
-import { useMemo, useState } from 'react';
-import { Extraction, CodeType } from '../../types';
-import CodePreview from './CodePreview';
+/**
+ * Results display component
+ * Main container for displaying extraction results with filtering and search
+ */
 
-interface Props {
+import { useMemo, useState } from 'react';
+import { Extraction, CodeItem } from '../../types/extraction';
+import ResultsSummary from './ResultsSummary';
+import ResultsFilter from './ResultsFilter';
+import CodeItemCard from './CodeItemCard';
+
+type FilterType = 'all' | 'functions' | 'components' | 'utilities' | 'constants';
+
+interface ResultsDisplayProps {
   extraction: Extraction;
 }
 
-type FilterOption = 'all' | CodeType;
-
-export default function ResultsDisplay({ extraction }: Props) {
-  const [filterType, setFilterType] = useState<FilterOption>('all');
+export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
+  // Filter and search state
+  const [filterType, setFilterType] = useState<FilterType>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const results = useMemo(() => {
+  /**
+   * Filter and search results
+   */
+  const filteredResults = useMemo(() => {
     if (!extraction.extractionResults) return [];
 
-    let items = [
+    // Get all items
+    let items: CodeItem[] = [
       ...extraction.extractionResults.functions,
       ...extraction.extractionResults.components,
       ...extraction.extractionResults.utilities,
       ...extraction.extractionResults.constants,
     ];
 
+    // Apply type filter
     if (filterType !== 'all') {
-      items = items.filter((item) => item.type === filterType);
+      items = items.filter((item) => `${item.type}s` === filterType);
     }
 
+    // Apply search filter
     if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
       items = items.filter(
         (item) =>
-          item.name.toLowerCase().includes(lowerSearch) ||
-          item.code.toLowerCase().includes(lowerSearch)
+          item.name.toLowerCase().includes(searchLower) ||
+          item.code.toLowerCase().includes(searchLower) ||
+          item.type.toLowerCase().includes(searchLower)
       );
     }
 
     return items;
   }, [extraction.extractionResults, filterType, searchTerm]);
 
+  // Show loading state
   if (extraction.status === 'processing') {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin">
-          <div className="w-8 h-8 border-4 border-brand-mediumGreen border-t-transparent rounded-full" />
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="animate-spin mb-4">
+          <svg
+            className="w-12 h-12 text-primary-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
         </div>
-        <p className="mt-4 text-brand-darkGreen font-medium">Processing your code...</p>
+        <p className="text-gray-600 text-lg">Processing your code...</p>
+        <p className="text-gray-500 text-sm mt-2">This may take a few moments</p>
       </div>
     );
   }
 
+  // Show error state
   if (extraction.status === 'failed') {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl shadow-sm">
-        Extraction failed: {extraction.error || 'Unknown error occurred.'}
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-red-900 mb-2">Extraction Failed</h3>
+        <p className="text-red-700 mb-4">
+          {extraction.error ||
+            'An error occurred while processing your code. Please try again.'}
+        </p>
+        <a
+          href="/upload"
+          className="inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition"
+        >
+          Try Again
+        </a>
       </div>
     );
   }
 
-  if (!extraction.extractionResults) {
+  // Show results
+  if (extraction.status === 'completed' && extraction.extractionResults) {
+    const results = extraction.extractionResults;
+
     return (
-      <div className="text-center py-8 text-brand-brown/70 bg-white rounded-2xl shadow-xl border border-brand-darkBrown/20">
-        No extraction results available.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">      
-      <div className="bg-white p-8 rounded-2xl shadow-xl shadow-brand-darkBrown/10 border-2 border-brand-brown/70 space-y-6">        
-        
-        <div className="flex flex-col md:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Search components, functions, or code..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-base flex-1"
-          />
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as FilterOption)}
-            className="input-base md:w-48 text-brand-darkGreen"
-          >
-            <option value="all">All Items</option>
-            <option value="function">Functions</option>
-            <option value="component">Components</option>
-            <option value="utility">Utilities</option>
-            <option value="constant">Constants</option>
-          </select>
-        </div>
-        
-        <div className="pt-6 border-t-2 border-brand-brown/50">
-          <h1 className="text-2xl font-bold text-brand-darkGreen mb-1 tracking-tight">Extraction Results</h1>
-          <p className="text-brand-brown text-sm">
-            ID: <span className="font-mono text-brand-darkGreen/70">{extraction.id}</span>
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Extraction Results
+          </h1>
+          <p className="text-gray-600">
+            File: <strong>{extraction.fileName}</strong>
+            {' • '}
+            Extracted: <strong>{new Date(extraction.createdAt).toLocaleDateString()}</strong>
           </p>
         </div>
-      </div>
-      
-      <div className="flex flex-col gap-6">
-        {results.map((item) => (          
-          <div key={item.id} className="rounded-xl shadow-lg shadow-brand-darkBrown/20 border-2 border-brand-brown/70 overflow-hidden bg-white">
-            <CodePreview item={item} />
-          </div>
-        ))}
-      </div>
-      
-      {results.length === 0 && (
-        <div className="text-center py-12 bg-white/50 rounded-2xl border border-brand-mediumGreen/20 shadow-sm">
-          <p className="text-brand-brown font-medium">No items match your search criteria.</p>
-          <button 
-            onClick={() => {
-              setSearchTerm('');
-              setFilterType('all');
-            }}
-            className="mt-3 text-brand-mediumGreen hover:text-brand-darkGreen text-sm font-semibold uppercase tracking-wide transition-colors"
+
+        {/* Summary cards */}
+        <ResultsSummary results={results} />
+
+        {/* Filter and search */}
+        <ResultsFilter
+          filterType={filterType}
+          searchTerm={searchTerm}
+          onFilterChange={setFilterType}
+          onSearchChange={setSearchTerm}
+          totalItems={results.summary.totalItems}
+          filteredItems={filteredResults.length}
+        />
+
+        {/* Results list */}
+        <div>
+          {filteredResults.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+              <svg
+                className="w-12 h-12 mx-auto text-gray-400 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <p className="text-gray-600 text-lg mb-2">No items found</p>
+              {searchTerm && (
+                <p className="text-gray-500 text-sm">
+                  Try adjusting your search or filter criteria
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredResults.map((item) => (
+                <CodeItemCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Export section (placeholder for Phase 2) */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Export Results</h3>
+          <p className="text-blue-700 text-sm mb-4">
+            Export functionality is coming soon! You'll be able to download results as JSON, CSV, or PDF.
+          </p>
+          <button
+            disabled
+            className="px-4 py-2 bg-blue-600 text-white rounded font-medium cursor-not-allowed opacity-50"
           >
-            Clear filters
+            Export (Coming Soon)
           </button>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  // Fallback state
+  return (
+    <div className="text-center py-12">
+      <p className="text-gray-600">No results available</p>
     </div>
   );
 }

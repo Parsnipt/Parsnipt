@@ -63,13 +63,13 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
   };
 
   /**
-   * Handle view extraction details
-   */
-  const handleView = () => {
-    if (extraction.status === 'completed') {
-      navigate(`/results/${extraction.id}`);
-    }
-  };
+   * Handle view extraction details
+   */
+  const handleView = () => {
+    if (extraction.status === 'completed') {
+      navigate(`/results/${extraction.id}`);
+    }
+  };
 
   /**
    * Handle delete extraction
