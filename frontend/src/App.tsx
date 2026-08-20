@@ -1,18 +1,32 @@
+/**
+ * Main application component with routing
+ */
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import AuthLayout from './components/layout/AuthLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Results from './pages/Results';
+import Upload from './pages/Upload';
 import NotFound from './pages/NotFound';
+
+import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Protected routes */}
+        {/* Authentication routes (public) */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
+
+        {/* Main application routes (protected) */}
         <Route element={<MainLayout />}>
           <Route
             path="/"
@@ -22,24 +36,17 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/*The Results route*/}
           <Route
-            path="/results/:id"
+            path="/upload"
             element={
               <ProtectedRoute>
-                <Results />
+                <Upload />
               </ProtectedRoute>
             }
-          />
+          />          
         </Route>
 
-        {/* Auth routes */}
-        <Route element={<AuthLayout />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Route>
-
-        {/* Not found */}
+        {/* 404 Not Found */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

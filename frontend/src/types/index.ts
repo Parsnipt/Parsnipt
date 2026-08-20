@@ -1,64 +1,23 @@
 /**
- * Global TypeScript type definitions
- */
+ * Central export file for all TypeScript types
+ */
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  tier: 'free' | 'pro' | 'enterprise';
-  createdAt: string;
-}
+// Auth types
+export * from './auth';
 
-export type CodeType = 'function' | 'component' | 'utility' | 'constant';
+// Extraction types
+export * from './extraction';
 
-export interface CodeItem {
-  id: string;
-  name: string;
-  type: CodeType;
+// Utility types
+export interface ApiError {
   code: string;
-  lineCount: number;
-  complexity: string;
-  startLine: number;
-  endLine: number;
+  message: string;
+  details?: Record<string, unknown>;
 }
 
-export interface Extraction {
-  id: string;
-  userId: string;
-  status: 'processing' | 'completed' | 'failed';
-  error?: string;
-  createdAt: string;
-  extractionResults?: {
-    functions: CodeItem[];
-    components: CodeItem[];
-    utilities: CodeItem[];
-    constants: CodeItem[];
-  };
-}
-
-export interface ExtractionResults {
-  functions: CodeItem[];
-  components: CodeItem[];
-  utilities: CodeItem[];
-  constants: CodeItem[];
-}
-
-export interface CodeItem {
-  name: string;
-  type: 'function' | 'component' | 'utility' | 'constant';
-  code: string;
-  startLine: number;
-  endLine: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: Record<string, unknown>;
-  };
-  timestamp: string;
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
 }
