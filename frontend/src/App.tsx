@@ -12,6 +12,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Upload from './pages/Upload';
+import Results from './pages/Results';
 import NotFound from './pages/NotFound';
 
 import './App.css';
@@ -43,7 +44,15 @@ function App() {
                 <Upload />
               </ProtectedRoute>
             }
-          />          
+          />
+          <Route
+            path="/results/:id"
+            element={
+              <ProtectedRoute>
+                <Results />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* 404 Not Found */}
