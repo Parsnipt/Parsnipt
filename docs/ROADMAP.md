@@ -8,7 +8,7 @@ This roadmap outlines our planned features, improvements, and milestones for Par
 
 ## Overview
 
-Parsnipt is being developed in three phases over the next 12+ months. Each phase builds on the previous, gradually expanding capabilities and introducing new features.
+Parsnipt is being developed in three phases over the next 9+ months. Each phase builds on the previous, gradually expanding capabilities and introducing new features.
 
 ---
 
@@ -16,7 +16,7 @@ Parsnipt is being developed in three phases over the next 12+ months. Each phase
 
 **Goal:** Establish core functionality for intelligent code extraction with JavaScript/TypeScript support.
 
-**Target Launch:** October 2026
+**Target Launch:** September 2026
 
 ### Features
 

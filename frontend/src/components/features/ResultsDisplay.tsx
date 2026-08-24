@@ -135,7 +135,7 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
           </div>
         </div>
 
-        {/* 3. Export section */}
+        {/* Export section */}
         <div className="bg-white rounded-2xl border-2 border-brand-brown/80 shadow-xl shadow-brand-darkBrown/10 p-6">
           <h3 className="text-lg font-bold text-brand-darkGreen/90 mb-2">Export Results</h3>
           <p className="text-brand-brown/80 text-sm mb-4">

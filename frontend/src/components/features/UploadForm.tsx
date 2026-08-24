@@ -116,7 +116,7 @@ export default function UploadForm() {
           fileInputRef.current.value = '';
         }
 
-        // SMART ROUTING: Check if backend finished it instantly
+        // Check if backend finished instantly
         if (extraction.status === 'completed') {
           setIsSubmitting(false);
           setUploading(false);
@@ -153,7 +153,7 @@ export default function UploadForm() {
         error: completed.error,
       });
 
-      // Transport immediately upon successful polling!
+      // Transport immediately upon successful polling
       navigate(`/results/${extractionId}`);
     } catch (error) {
       console.error('Error polling extraction status:', error);

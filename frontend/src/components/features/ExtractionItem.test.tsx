@@ -61,8 +61,7 @@ describe('ExtractionItem', () => {
     };
 
     renderWithRouter(<ExtractionItem extraction={processingExtraction} />);
-
-    // FIXED: Use getAllByText because both the badge and the button say "Processing"
+    
     const processingElements = screen.getAllByText(/processing/i);
     expect(processingElements.length).toBeGreaterThan(0);
   });

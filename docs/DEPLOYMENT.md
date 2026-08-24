@@ -101,7 +101,6 @@ npm run build
 
 Create `Dockerfile`:
 
-```dockerfile
 FROM node:18-alpine
 
 WORKDIR /app
@@ -116,7 +115,7 @@ RUN npm install -g serve
 EXPOSE 3000
 
 CMD ["serve", "-s", "dist", "-l", "3000"]
-```
+
 
 Build and run:
 ```bash

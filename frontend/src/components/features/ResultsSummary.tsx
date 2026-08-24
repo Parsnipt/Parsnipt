@@ -11,8 +11,7 @@ interface ResultsSummaryProps {
 
 export default function ResultsSummary({ results }: ResultsSummaryProps) {
   /**
-   * Category info matched to the exact semantic CodeItem tags
-   * Icons removed per design specs
+   * Category info matched to the emantic CodeItem tags
    */
   const categories = [
     {
