@@ -34,11 +34,20 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-primary-600 text-white shadow-lg sticky top-0 z-40">
+    <header className="bg-brand-darkGreen backdrop-blur-md text-brand-cream shadow-md border-b border-brand-brown/60 sticky top-0 z-40">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="text-2xl font-bold hover:text-primary-100 transition">
+          
+          {/* Brand Logo & Name */}
+          <Link            
+            to="/" 
+            className="flex items-center text-2xl font-bold text-brand-cream hover:text-brand-brown/80 transition-colors"
+          >
+            <img 
+              src="/logo.png" 
+              alt="Parsnipt Logo" 
+              className="w-18 h-12 mr-3 rounded-md object-contain" 
+            />
             Parsnipt
           </Link>
 
@@ -50,10 +59,10 @@ export default function Header() {
                 {/* Upload link */}
                 <Link
                   to="/upload"
-                  className={`transition text-sm font-medium ${
+                  className={`transition-colors text-sm font-medium ${
                     isActive('/upload')
-                      ? 'text-white border-b-2 border-white pb-1'
-                      : 'hover:text-primary-100'
+                      ? 'text-brand-cream border-b-2 border-brand-cream pb-1'
+                      : 'text-brand-cream hover:text-brand-mediumGreen'
                   }`}
                 >
                   Upload
@@ -64,20 +73,20 @@ export default function Header() {
                   href="https://github.com/parsnipt/parsnipt"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-primary-100 transition text-sm"
+                  className="text-brand-cream hover:text-brand-mediumGreen transition-colors text-sm font-medium"
                 >
                   Docs
                 </a>
 
                 {/* User section */}
-                <div className="flex items-center space-x-4 pl-4 border-l border-primary-400">
+                <div className="flex items-center space-x-4 pl-4 border-l border-brand-mediumGreen/50">
                   <div className="text-sm">
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-primary-100 text-xs capitalize">{user.tier} tier</p>
+                    <p className="font-bold text-brand-cream">{user.name}</p>
+                    <p className="text-brand-cream text-xs capitalize">{user.tier} tier</p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="px-3 py-1 bg-primary-700 hover:bg-primary-800 rounded transition text-sm font-medium"
+                    className="px-4 py-1.5 bg-brand-brown/80 hover:bg-brand-mediumGreen text-brand-cream rounded-lg transition-colors text-sm font-bold"
                   >
                     Logout
                   </button>
@@ -85,16 +94,16 @@ export default function Header() {
               </>
             ) : (
               /* Unauthenticated user section */
-              <div className="flex items-center space-x-4 pl-4 border-l border-primary-400">
+              <div className="flex items-center space-x-4 pl-4 border-l border-brand-mediumGreen/50">
                 <Link
                   to="/login"
-                  className="hover:text-primary-100 transition text-sm"
+                  className="text-brand-cream font-medium hover:text-brand-mediumGreen transition-colors text-sm"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 bg-primary-700 hover:bg-primary-800 rounded transition text-sm font-medium"
+                  className="px-4 py-1.5 bg-brand-mediumGreen hover:bg-brand-brown text-brand-cream rounded-lg transition-colors text-sm font-bold"
                 >
                   Register
                 </Link>

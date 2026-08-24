@@ -27,7 +27,7 @@ describe('CodeHighlight', () => {
   it('should render code with syntax highlighting', () => {
     render(<CodeHighlight code={testCode} language="javascript" />);
 
-    // Syntax highlighters split code into multiple spans, so this checks the document body text content
+    // Syntax highlighters split code into multiple spans, so this checks the document body text content.
     expect(document.body.textContent).toContain('function greet');
   });
 
@@ -37,7 +37,7 @@ describe('CodeHighlight', () => {
     const copyButton = screen.getByRole('button');
     fireEvent.click(copyButton);
 
-    // Use findByText because the copy function is asynchronous
+    // Uses findByText because the copy function is asynchronous
     expect(await screen.findByText(/Copied!/)).toBeInTheDocument();
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(testCode);
   });

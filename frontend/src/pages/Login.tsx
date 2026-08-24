@@ -11,16 +11,16 @@ export default function Login() {
   const { error: globalError, clearError } = useAuthStore();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 to-primary-900 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-brand-cream flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {/* Card container */}
-        <div className="bg-white rounded-lg shadow-2xl p-8">
+        <div className="bg-white rounded-lg shadow-xl shadow-brand-darkBrown/30 border-2 border-brand-brown/80 p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary-900 mb-2">
+            <h1 className="text-4xl font-bold text-brand-darkGreen/90 mb-2">
               Parsnipt
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-brand-brown/80 text-lg">
               Extract code smarter, faster, better
             </p>
           </div>
@@ -43,39 +43,39 @@ export default function Login() {
 
           {/* Divider */}
           <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-gray-300"></div>
-            <span className="px-3 text-gray-500 text-sm">OR</span>
-            <div className="flex-1 border-t border-gray-300"></div>
+            <div className="flex-1 border border-brand-darkGreen/90"></div>
+            <span className="px-3 text-brand-brown/80 text-sm">OR</span>
+            <div className="flex-1 border border-brand-darkGreen/90"></div>
           </div>
 
           {/* Register link */}
-          <p className="text-center text-gray-600">
+          <p className="text-center text-brand-brown/80">
             Don't have an account?{' '}
             <Link
               to="/register"
-              className="text-primary-600 font-semibold hover:text-primary-700 underline"
+              className="text-brand-darkGreen/90 font-bold hover:text-brand-mediumGreen transition-colors underline"
             >
               Create one now
             </Link>
           </p>
 
           {/* Demo credentials info */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
-            <p className="text-xs font-semibold text-blue-900 mb-2">
+          <div className="mt-6 p-4 bg-brand-cream border border-brand-mediumGreen rounded">
+            <p className="text-xs font-bold text-brand-darkGreen mb-2">
               Demo Credentials:
             </p>
-            <p className="text-xs text-blue-700">
-              Email: <code className="bg-white px-1 rounded">test@example.com</code>
+            <p className="text-xs text-brand-brown">
+              Email: <code className="bg-white border border-brand-mediumGreen px-1 rounded text-brand-darkGreen">test@example.com</code>
             </p>
-            <p className="text-xs text-blue-700">
-              Password: <code className="bg-white px-1 rounded">password123</code>
+            <p className="text-xs text-brand-brown mt-1">
+              Password: <code className="bg-white border border-brand-mediumGreen px-1 rounded text-brand-darkGreen">password123</code>
             </p>
           </div>
         </div>
 
         {/* Footer link */}
         <div className="mt-6 text-center">
-          <a href="#" className="text-white hover:text-primary-100 text-sm underline">
+          <a href="#" className="text-brand-darkGreen/90 hover:text-brand-mediumGreen transition-colors text-sm underline">
             Need help? Contact support
           </a>
         </div>

@@ -63,13 +63,13 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
   };
 
   /**
-   * Handle view extraction details
-   */
-  const handleView = () => {
-    if (extraction.status === 'completed') {
-      navigate(`/results/${extraction.id}`);
-    }
-  };
+   * Handle view extraction details
+   */
+  const handleView = () => {
+    if (extraction.status === 'completed') {
+      navigate(`/results/${extraction.id}`);
+    }
+  };
 
   /**
    * Handle delete extraction
@@ -94,15 +94,15 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
     : 0;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+    <div className="bg-white border-2 border-brand-brown/30 rounded-2xl p-6 hover:shadow-md transition-shadow">
       {/* Confirm delete modal */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl border-2 border-brand-brown/80 p-8 max-w-sm mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-brand-darkGreen/90 mb-2">
               Delete Extraction?
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-brand-brown/80 mb-8 font-medium">
               Are you sure you want to delete this extraction? This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
@@ -115,7 +115,7 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold transition-colors"
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
@@ -131,7 +131,7 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
           <div className="flex items-center gap-3 mb-2">
             {/* File icon */}
             <svg
-              className="w-5 h-5 text-gray-400"
+              className="w-5 h-5 text-brand-mediumGreen"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -145,11 +145,11 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
             </svg>
 
             {/* File name */}
-            <h3 className="text-lg font-semibold text-gray-900">{extraction.fileName}</h3>
+            <h3 className="text-lg font-bold text-brand-darkGreen/90">{extraction.fileName}</h3>
 
             {/* Status badge */}
             <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.bg} ${statusBadge.text} flex items-center gap-1`}
+              className={`px-3 py-1 rounded-full text-xs font-bold ${statusBadge.bg} ${statusBadge.text} flex items-center gap-1 border border-white`}
             >
               <span>{statusBadge.icon}</span>
               {extraction.status.charAt(0).toUpperCase() + extraction.status.slice(1)}
@@ -157,28 +157,28 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
           </div>
 
           {/* File metadata */}
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600 ml-8">
+          <div className="flex flex-wrap gap-4 text-sm text-brand-brown/80 font-medium ml-8">
             <span>{formatFileSize(extraction.fileSizeBytes)}</span>
-            <span>•</span>
+            <span className="text-brand-brown/40">•</span>
             <span>{formatDate(extraction.createdAt)}</span>
             {extraction.status === 'completed' && itemCount > 0 && (
               <>
-                <span>•</span>
-                <span>{itemCount} item{itemCount !== 1 ? 's' : ''} extracted</span>
+                <span className="text-brand-brown/40">•</span>
+                <span className="font-bold">{itemCount} item{itemCount !== 1 ? 's' : ''} extracted</span>
               </>
             )}
           </div>
 
           {/* Error message if failed */}
           {extraction.status === 'failed' && extraction.error && (
-            <p className="mt-2 text-sm text-red-600 ml-8">
+            <p className="mt-2 text-sm font-bold text-red-600 ml-8">
               Error: {extraction.error}
             </p>
           )}
 
           {/* Processing time if completed */}
           {extraction.status === 'completed' && extraction.extractionResults && (
-            <p className="mt-2 text-xs text-gray-500 ml-8">
+            <p className="mt-2 text-xs text-brand-brown/60 ml-8">
               Processed in {extraction.extractionResults.summary.processingTimeMs}ms
             </p>
           )}
@@ -186,14 +186,14 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
 
         {/* Right section - actions */}
         <div className="flex gap-2 ml-4">
-          {/* View button - only enabled when completed */}
+          {/* View button */}
           <button
             onClick={handleView}
             disabled={extraction.status !== 'completed'}
-            className={`px-4 py-2 rounded font-medium transition ${
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${
               extraction.status === 'completed'
                 ? 'btn-primary'
-                : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                : 'bg-brand-cream/50 text-brand-brown/50 cursor-not-allowed border-2 border-transparent'
             }`}
           >
             {extraction.status === 'completed' ? 'View' : 'Processing'}
@@ -203,7 +203,7 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
           <button
             onClick={() => setShowConfirm(true)}
             disabled={isDeleting}
-            className={`px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 rounded font-medium transition ${
+            className={`px-4 py-2 border-2 border-red-200 text-red-600 hover:bg-red-50 rounded-lg font-bold transition-colors ${
               isDeleting ? 'opacity-70 cursor-not-allowed' : ''
             }`}
           >

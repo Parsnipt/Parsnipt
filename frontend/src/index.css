@@ -32,7 +32,7 @@
 @layer components {
   .btn-primary {
     /* Medium Green background, Dark Green hover, Cream text */
-    @apply px-4 py-2 bg-brand-mediumGreen text-brand-cream rounded-lg font-semibold hover:bg-brand-darkGreen transition-colors duration-200;
+    @apply px-4 py-2 bg-brand-darkGreen/90 text-brand-cream rounded-lg font-semibold hover:bg-brand-mediumGreen transition-colors duration-200;
   }
 
   .btn-secondary {
@@ -42,7 +42,7 @@
 
   .input-base {
     /* Green border, snaps to strong brand green on focus */
-    @apply w-full px-4 py-2 border border-brand-mediumGreen/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-mediumGreen bg-white;
+    @apply w-full px-4 py-2 border-2 border-brand-darkGreen/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-mediumGreen bg-white;
   }
 
   .container-narrow {

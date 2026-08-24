@@ -193,7 +193,7 @@ export default function RegisterForm() {
 
       {/* Full Name field */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="name" className="block text-sm font-bold text-brand-darkGreen/90 mb-1">
           Full Name
         </label>
         <input
@@ -211,7 +211,7 @@ export default function RegisterForm() {
 
       {/* Email field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="email" className="block text-sm font-bold text-brand-darkGreen/90 mb-1">
           Email Address
         </label>
         <input
@@ -229,7 +229,7 @@ export default function RegisterForm() {
 
       {/* Password field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="password" className="block text-sm font-bold text-brand-darkGreen/90 mb-1">
           Password
         </label>
         <input
@@ -248,14 +248,14 @@ export default function RegisterForm() {
         {password && (
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-600">Password Strength:</span>
+              <span className="text-xs font-medium text-brand-brown/80">Password Strength:</span>
               <span className={`text-xs font-bold ${passwordStrength.color}`}>
                 {passwordStrength.text}
               </span>
             </div>
 
             {/* Strength bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-brand-cream border border-brand-brown/20 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all ${
                   passwordStrength.score === 1
@@ -270,7 +270,7 @@ export default function RegisterForm() {
             </div>
 
             {/* Requirements checklist */}
-            <div className="space-y-1">
+            <div className="space-y-1 mt-2">
               <RequirementItem
                 met={passwordStrength.requirements.minLength}
                 text="At least 8 characters"
@@ -294,7 +294,7 @@ export default function RegisterForm() {
 
       {/* Confirm Password field */}
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="confirmPassword" className="block text-sm font-bold text-brand-darkGreen/90 mb-1">
           Confirm Password
         </label>
         <input
@@ -317,22 +317,22 @@ export default function RegisterForm() {
       </div>
 
       {/* Terms agreement checkbox */}
-      <div className="flex items-start">
+      <div className="flex items-start mt-4">
         <input
           type="checkbox"
           id="terms"
           checked={agreedToTerms}
           onChange={(e) => setAgreedToTerms(e.target.checked)}
-          className="mt-1 mr-2"
+          className="mt-1 mr-2 accent-brand-mediumGreen"
           disabled={isSubmitting}
         />
-        <label htmlFor="terms" className="text-xs text-gray-600">
+        <label htmlFor="terms" className="text-xs text-brand-brown/80">
           I agree to the{' '}
-          <a href="#" className="text-primary-600 hover:underline">
+          <a href="#" className="text-brand-darkGreen/90 hover:text-brand-mediumGreen font-bold underline transition-colors">
             Terms and Conditions
           </a>{' '}
           and{' '}
-          <a href="#" className="text-primary-600 hover:underline">
+          <a href="#" className="text-brand-darkGreen/90 hover:text-brand-mediumGreen font-bold underline transition-colors">
             Privacy Policy
           </a>
         </label>
@@ -342,7 +342,7 @@ export default function RegisterForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className={`btn-primary w-full ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+        className={`btn-primary w-full mt-2 ${isSubmitting ? 'opacity-90 cursor-not-allowed' : ''}`}
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center">
@@ -370,12 +370,12 @@ function RequirementItem({ met, text }: RequirementItemProps) {
     <div className="flex items-center text-xs">
       <span
         className={`mr-2 font-bold ${
-          met ? 'text-green-600' : 'text-gray-400'
+          met ? 'text-green-600' : 'text-brand-brown/40'
         }`}
       >
         {met ? '✓' : '○'}
       </span>
-      <span className={met ? 'text-gray-700' : 'text-gray-500'}>
+      <span className={met ? 'text-brand-darkGreen/90' : 'text-brand-brown/80'}>
         {text}
       </span>
     </div>

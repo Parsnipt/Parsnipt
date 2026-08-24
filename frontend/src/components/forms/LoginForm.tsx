@@ -101,12 +101,17 @@ export default function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Error alert */}
       {localError && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center">
+        <div 
+          id="form-error" 
+          role="alert" 
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center"
+        >
           <span>{localError}</span>
           <button
             type="button"
             onClick={() => setLocalError(null)}
             className="font-bold text-xl leading-none"
+            aria-label="Dismiss error"
           >
             ×
           </button>
@@ -115,7 +120,7 @@ export default function LoginForm() {
 
       {/* Email field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="email" className="block text-sm font-bold text-brand-darkGreen/90 mb-1">
           Email Address
         </label>
         <input
@@ -128,15 +133,17 @@ export default function LoginForm() {
           placeholder="your@email.com"
           disabled={isSubmitting}
           required
+          aria-label="Email address input"
+          aria-describedby={localError ? "form-error" : "email-help"}
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p id="email-help" className="text-xs text-brand-brown/80 mt-1">
           We'll never share your email with anyone else.
         </p>
       </div>
 
       {/* Password field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="password" className="block text-sm font-bold text-brand-darkGreen/90 mb-1">
           Password
         </label>
         <input
@@ -156,7 +163,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className={`btn-primary w-full ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+        className={`btn-primary w-full ${isSubmitting ? 'opacity-90 cursor-not-allowed' : ''}`}
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center">
