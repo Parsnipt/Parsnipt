@@ -7,7 +7,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api/v1',
-  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000'),
+  timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
   headers: {
     'Content-Type': 'application/json',
   },

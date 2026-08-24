@@ -53,20 +53,20 @@ export default function FileInput({
       onDrop={handleDrop}
       className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-200 ${
         isDragging
-          ? 'border-brand-darkGreen bg-brand-mediumGreen/10'
-          : 'border-brand-mediumGreen/40 hover:border-brand-mediumGreen'
+          ? 'border-brand-darkGreen/90 bg-brand-mediumGreen/50'
+          : 'border-brand-mediumGreen/50 hover:border-brand-mediumGreen'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <div className="mb-4">        
-        <svg className="w-12 h-12 mx-auto text-brand-mediumGreen/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-12 h-12 mx-auto text-brand-brown/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
       </div>
 
-      <p className="text-lg font-semibold text-brand-darkGreen mb-2">
+      <p className="text-lg font-semibold text-brand-brown/80 mb-2">
         Drag and drop your file here
       </p>
-      <p className="text-brand-brown mb-4">or</p>
+      <p className="text-brand-brown/80 mb-4">or</p>
 
       {/* Uses the global btn-primary from index.css */}
       <button

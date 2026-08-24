@@ -3,7 +3,6 @@
  * Handles filtering by type and searching
  */
 
-
 type FilterType = 'all' | 'functions' | 'components' | 'utilities' | 'constants';
 
 interface ResultsFilterProps {
@@ -23,37 +22,53 @@ export default function ResultsFilter({
   totalItems,
   filteredItems,
 }: ResultsFilterProps) {
-  /**
-   * Filter options
-   */
-  const filterOptions: Array<{ value: FilterType; label: string; icon: string }> = [
-    { value: 'all', label: 'All Items', icon: '📋' },
-    { value: 'functions', label: 'Functions', icon: 'ƒ' },
-    { value: 'components', label: 'Components', icon: '⧬' },
-    { value: 'utilities', label: 'Utilities', icon: '🔧' },
-    { value: 'constants', label: 'Constants', icon: '◆' },
+  
+  const filterOptions: Array<{ value: FilterType; label: string }> = [
+    { value: 'all', label: 'All Items' },
+    { value: 'functions', label: 'Functions' },
+    { value: 'components', label: 'Components' },
+    { value: 'utilities', label: 'Utilities' },
+    { value: 'constants', label: 'Constants' },
   ];
 
+  /**
+   * Helper to map filter buttons to their exact semantic colors
+   */
+  const getFilterStyle = (type: FilterType, isActive: boolean) => {
+    if (isActive) {
+      switch (type) {
+        case 'functions': return 'bg-blue-600 text-white border-blue-600 shadow-sm';
+        case 'components': return 'bg-purple-600 text-white border-purple-600 shadow-sm';
+        case 'utilities': return 'bg-green-600 text-white border-green-600 shadow-sm';
+        case 'constants': return 'bg-orange-600 text-white border-orange-600 shadow-sm';
+        default: return 'bg-brand-darkGreen/90 text-brand-cream border-brand-darkGreen/90 shadow-sm';
+      }
+    } else {
+      switch (type) {
+        case 'functions': return 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100';
+        case 'components': return 'bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100';
+        case 'utilities': return 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100';
+        case 'constants': return 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100';
+        default: return 'bg-brand-cream/50 text-brand-darkGreen/90 border-brand-brown/30 hover:bg-brand-cream hover:border-brand-brown/80';
+      }
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Search box */}
       <div>
-        <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="search" className="block text-sm font-bold text-brand-darkGreen/90 mb-2">
           Search Code Items
         </label>
         <div className="relative">
           <svg
-            className="absolute left-3 top-3 w-5 h-5 text-gray-400"
+            className="absolute left-3 top-3 w-5 h-5 text-brand-mediumGreen"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
@@ -66,20 +81,20 @@ export default function ResultsFilter({
           {searchTerm && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-3 text-brand-brown hover:text-brand-darkBrown transition-colors"
             >
               ✕
             </button>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-brand-brown/80 mt-1">
           Search in names and code content
         </p>
       </div>
 
       {/* Filter buttons */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-bold text-brand-darkGreen/90 mb-2">
           Filter by Type
         </label>
         <div className="flex flex-wrap gap-2">
@@ -87,13 +102,8 @@ export default function ResultsFilter({
             <button
               key={option.value}
               onClick={() => onFilterChange(option.value)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filterType === option.value
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-bold transition-colors border-2 ${getFilterStyle(option.value, filterType === option.value)}`}
             >
-              <span className="mr-1">{option.icon}</span>
               {option.label}
             </button>
           ))}
@@ -101,12 +111,12 @@ export default function ResultsFilter({
       </div>
 
       {/* Results count */}
-      <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-        Showing <strong>{filteredItems}</strong> of <strong>{totalItems}</strong> items
+      <div className="p-3 bg-brand-mediumGreen/10 border-2 border-brand-mediumGreen/30 rounded-lg text-sm text-brand-darkGreen/90 font-medium">
+        Showing <strong className="text-brand-darkGreen/90 text-base">{filteredItems}</strong> of <strong className="text-brand-darkGreen/90 text-base">{totalItems}</strong> items
         {searchTerm && (
           <span>
             {' '}
-            matching "<strong>{searchTerm}</strong>"
+            matching "<strong className="text-brand-brown/80">{searchTerm}</strong>"
           </span>
         )}
       </div>

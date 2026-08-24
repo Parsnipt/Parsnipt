@@ -11,17 +11,17 @@ export default function Register() {
   const { error: globalError, clearError } = useAuthStore();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-secondary-600 to-secondary-900 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-brand-cream flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Card container */}
-        <div className="bg-white rounded-lg shadow-2xl p-8">
+        {/* Card container matching Login */}
+        <div className="bg-white rounded-lg shadow-xl shadow-brand-darkBrown/30 border-2 border-brand-brown/80 p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-secondary-900 mb-2">
-              Parsnipt
+            <h1 className="text-4xl font-bold text-brand-darkGreen/90 mb-2">
+              Create Account
             </h1>
-            <p className="text-gray-600 text-lg">
-              Join the code extraction revolution
+            <p className="text-brand-brown/80 text-lg">
+              Join Parsnipt and start extracting
             </p>
           </div>
 
@@ -38,49 +38,26 @@ export default function Register() {
             </div>
           )}
 
-          {/* Registration form */}
+          {/* Register form */}
           <RegisterForm />
 
-          {/* Divider */}
+          {/* Divider matching Login */}
           <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-gray-300"></div>
-            <span className="px-3 text-gray-500 text-sm">OR</span>
-            <div className="flex-1 border-t border-gray-300"></div>
+            <div className="flex-1 border border-brand-darkGreen/90"></div>
+            <span className="px-3 text-brand-brown/80 text-sm">OR</span>
+            <div className="flex-1 border border-brand-darkGreen/90"></div>
           </div>
 
           {/* Login link */}
-          <p className="text-center text-gray-600">
+          <p className="text-center text-brand-brown/80">
             Already have an account?{' '}
             <Link
               to="/login"
-              className="text-secondary-600 font-semibold hover:text-secondary-700 underline"
+              className="text-brand-darkGreen/90 font-bold hover:text-brand-mediumGreen transition-colors underline"
             >
-              Log in here
+              Login instead
             </Link>
           </p>
-
-          {/* Benefits section */}
-          <div className="mt-6 space-y-2">
-            <div className="flex items-start text-xs">
-              <span className="text-green-600 font-bold mr-2">✓</span>
-              <span className="text-gray-700">50KB free file uploads</span>
-            </div>
-            <div className="flex items-start text-xs">
-              <span className="text-green-600 font-bold mr-2">✓</span>
-              <span className="text-gray-700">10 extractions per day</span>
-            </div>
-            <div className="flex items-start text-xs">
-              <span className="text-green-600 font-bold mr-2">✓</span>
-              <span className="text-gray-700">Syntax-highlighted code preview</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer link */}
-        <div className="mt-6 text-center">
-          <a href="#" className="text-white hover:text-secondary-100 text-sm underline">
-            Read our Privacy Policy
-          </a>
         </div>
       </div>
     </div>
