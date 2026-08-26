@@ -1,228 +1,164 @@
 /**
- * Authentication business logic
- * Handles user registration, login, token generation
- */
+ * Authentication business logic
+ * Handles user registration, login, token generation
+ */
 
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import {randomUUID} from 'crypto';
+import { randomUUID } from 'crypto';
 import {
-  RegisterRequest,
-  LoginRequest,
-  AuthTokens,
-  User,
-  UserWithPassword,
+  RegisterRequest,
+  LoginRequest,
+  AuthTokens,
+  User,
+  UserWithPassword,
 } from '../types/auth.js';
 import {
-  ValidationError,
-  AuthenticationError,
-  NotFoundError,
+  ValidationError,
+  AuthenticationError,
+  NotFoundError,
 } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 
-// In-memory user store (replaced with database in Issue #5)
-// This is temporary for testing purposes
+// In-memory user store
 const users = new Map<string, UserWithPassword>();
 
-// Pre-populated test user for development
+// Pre-populated test user for development (Auto-verified)
 if (process.env.NODE_ENV !== 'production') {
   const testUser: UserWithPassword = {
-    id: 'test-user-123',
-    email: 'test@example.com',
-    name: 'Test User',
-    tier: 'free',
-    passwordHash: bcryptjs.hashSync('password123', 10),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    id: 'test-user-123',
+    email: 'test@example.com',
+    name: 'Test User',
+    tier: 'free',
+    passwordHash: bcryptjs.hashSync('password123', 10),
+    isVerified: true, // Test user is pre-verified
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
-users.set(testUser.id, testUser);
-
-console.log('Running in Development Mode: Test user account injected.');
+  users.set(testUser.id, testUser);
+  console.log('Running in Development Mode: Test user account injected.');
 };
 
 export class AuthService {
-  /**
-   * Validate email format
-   */
-  private static validateEmail(email: string): void {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new ValidationError('Invalid email format');
-    }
-  }
+  private static validateEmail(email: string): void {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new ValidationError('Invalid email format');
+    }
+  }
 
-  /**
-   * Validate password strength
-   */
-  private static validatePassword(password: string): void {
-    if (password.length < 8) {
-      throw new ValidationError('Password must be at least 8 characters long');
-    }
-    if (!/[A-Z]/.test(password)) {
-      throw new ValidationError('Password must contain at least one uppercase letter');
-    }
-    if (!/[a-z]/.test(password)) {
-      throw new ValidationError('Password must contain at least one lowercase letter');
-    }
-    if (!/[0-9]/.test(password)) {
-      throw new ValidationError('Password must contain at least one number');
-    }
-  }
+  private static validatePassword(password: string): void {
+    if (password.length < 8) throw new ValidationError('Password must be at least 8 characters long');
+    if (!/[A-Z]/.test(password)) throw new ValidationError('Password must contain at least one uppercase letter');
+    if (!/[a-z]/.test(password)) throw new ValidationError('Password must contain at least one lowercase letter');
+    if (!/[0-9]/.test(password)) throw new ValidationError('Password must contain at least one number');
+  }
 
-  /**
-   * Hash password with bcrypt
-   */
-  private static async hashPassword(password: string): Promise<string> {
-    const salt = await bcryptjs.genSalt(10);
-    return bcryptjs.hash(password, salt);
-  }
+  private static async hashPassword(password: string): Promise<string> {
+    const salt = await bcryptjs.genSalt(10);
+    return bcryptjs.hash(password, salt);
+  }
 
-  /**
-   * Compare plaintext password with hash
-   */
-  private static async comparePasswords(
-    plaintext: string,
-    hash: string
-  ): Promise<boolean> {
-    return bcryptjs.compare(plaintext, hash);
-  }
+  private static async comparePasswords(plaintext: string, hash: string): Promise<boolean> {
+    return bcryptjs.compare(plaintext, hash);
+  }
 
-  /**
-   * Generate JWT tokens
-   */
-  private static generateTokens(userId: string, email: string): AuthTokens {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-    console.error('🔥 FATAL ERROR: JWT_SECRET environment variable is not set.');
-    process.exit(1); // Kills the server immediately
+  private static generateTokens(userId: string, email: string): AuthTokens {
+    const jwtSecret = process.env.JWT_SECRET || 'dev-secret-key';
+    const refreshSecret = process.env.REFRESH_TOKEN_SECRET || 'dev-refresh-key';
+    const expiresIn = 86400;
+
+    const accessToken = jwt.sign({ userId, email }, jwtSecret, { expiresIn: '24h' });
+    const refreshToken = jwt.sign({ userId, email }, refreshSecret, { expiresIn: '7d' });
+
+    return { accessToken, refreshToken, expiresIn };
+  }
+
+  /**
+   * Verify Email Token
+   */
+  static async verifyEmail(token: string): Promise<void> {
+    const user = Array.from(users.values()).find(u => u.verificationToken === token);
+    
+    if (!user) {
+      throw new ValidationError('Invalid or expired verification token');
     }
 
-    const refreshSecret = process.env.REFRESH_TOKEN_SECRET;
-    if (!refreshSecret) {
-    console.error('🔥 FATAL ERROR: REFRESH_TOKEN_SECRET environment variable is not set.');
-    process.exit(1); // Kills the server immediately
+    user.isVerified = true;
+    user.verificationToken = undefined; // Clear the token
+    user.updatedAt = new Date().toISOString();
+    
+    users.set(user.id, user);
+    logger.info(`User email verified: ${user.email}`);
+  }
+
+  static async register(request: RegisterRequest): Promise<{ user: User; tokens: AuthTokens }> {
+    const { email, password, name } = request;
+
+    if (!email || !password || !name) throw new ValidationError('Email, password, and name are required');
+    this.validateEmail(email);
+    this.validatePassword(password);
+
+    const existingUser = Array.from(users.values()).find((u) => u.email === email);
+    if (existingUser) throw new ValidationError('User with this email already exists');
+
+    const passwordHash = await this.hashPassword(password);
+    const userId = randomUUID();
+    const verificationToken = randomUUID(); // Generate secure token
+
+    const newUser: UserWithPassword = {
+      id: userId,
+      email,
+      name,
+      tier: 'free',
+      passwordHash,
+      isVerified: false, // LOCK ACCOUNT
+      verificationToken,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    users.set(userId, newUser);
+    logger.info(`User registered: ${email}`);
+
+    // MOCK EMAIL SENDER
+    console.log('\n======================================================');
+    console.log(`📩 MOCK EMAIL SENT TO: ${email}`);
+    console.log(`Subject: Verify your Parsnipt Account`);
+    console.log(`Body: Click here to verify your account:`);
+    console.log(`http://localhost:3000/verify?token=${verificationToken}`);
+    console.log('======================================================\n');
+    // -------------------------
+
+    const tokens = this.generateTokens(userId, email);
+    const { passwordHash: _, ...userWithoutPassword } = newUser;
+
+    return { user: userWithoutPassword, tokens };
+  }
+
+  static async login(request: LoginRequest): Promise<{ user: User; tokens: AuthTokens }> {
+    const { email, password } = request;
+
+    if (!email || !password) throw new ValidationError('Email and password are required');
+
+    const user = Array.from(users.values()).find((u) => u.email === email);
+    if (!user) throw new AuthenticationError('Invalid email or password');
+
+    const isPasswordValid = await this.comparePasswords(password, user.passwordHash);
+    if (!isPasswordValid) throw new AuthenticationError('Invalid email or password');
+
+    // ENFORCE EMAIL VERIFICATION
+    if (!user.isVerified) {
+      throw new AuthenticationError('Please check your email and verify your account before logging in.');
     }
-    const expiresIn = 86400; // 24 hours in seconds
 
-    const accessToken = jwt.sign(
-      { userId, email },
-      jwtSecret,
-      { expiresIn: '24h' }
-    );
+    logger.info(`User logged in: ${email}`);
+    const tokens = this.generateTokens(user.id, user.email);
+    const { passwordHash: _, ...userWithoutPassword } = user;
 
-    const refreshToken = jwt.sign(
-      { userId, email },
-      refreshSecret,
-      { expiresIn: '7d' }
-    );
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn,
-    };
-  }
-
-  /**
-   * Register new user
-   */
-  static async register(request: RegisterRequest): Promise<{ user: User; tokens: AuthTokens }> {
-    try {
-      const { email, password, name } = request;
-
-      // Validation
-      if (!email || !password || !name) {
-        throw new ValidationError('Email, password, and name are required');
-      }
-
-      this.validateEmail(email);
-      this.validatePassword(password);
-
-      // Check if user already exists
-      const existingUser = Array.from(users.values()).find(
-        (u) => u.email === email
-      );
-      if (existingUser) {
-        throw new ValidationError('User with this email already exists');
-      }
-
-      // Hash password
-      const passwordHash = await this.hashPassword(password);
-
-      // Create user
-      const userId = randomUUID();
-      const newUser: UserWithPassword = {
-        id: userId,
-        email,
-        name,
-        tier: 'free',
-        passwordHash,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      users.set(userId, newUser);
-
-      logger.info(`User registered: ${email}`);
-
-      // Generate tokens
-      const tokens = this.generateTokens(userId, email);
-
-      // Return user without password
-      const { passwordHash: _, ...userWithoutPassword } = newUser;
-
-      return {
-        user: userWithoutPassword,
-        tokens,
-      };
-    } catch (error) {
-      logger.error(`Registration error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Login user
-   */
-  static async login(request: LoginRequest): Promise<{ user: User; tokens: AuthTokens }> {
-    try {
-      const { email, password } = request;
-
-      // Validation
-      if (!email || !password) {
-        throw new ValidationError('Email and password are required');
-      }
-
-      // Find user by email
-      const user = Array.from(users.values()).find((u) => u.email === email);
-      if (!user) {
-        throw new AuthenticationError('Invalid email or password');
-      }
-
-      // Compare passwords
-      const isPasswordValid = await this.comparePasswords(password, user.passwordHash);
-      if (!isPasswordValid) {
-        throw new AuthenticationError('Invalid email or password');
-      }
-
-      logger.info(`User logged in: ${email}`);
-
-      // Generate tokens
-      const tokens = this.generateTokens(user.id, user.email);
-
-      // Return user without password
-      const { passwordHash: _, ...userWithoutPassword } = user;
-
-      return {
-        user: userWithoutPassword,
-        tokens,
-      };
-    } catch (error) {
-      logger.error(`Login error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
-    }
-  }
+    return { user: userWithoutPassword, tokens };
+  }
 
   /**
    * Verify JWT token

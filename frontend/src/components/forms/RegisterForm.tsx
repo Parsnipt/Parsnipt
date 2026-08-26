@@ -23,7 +23,7 @@ interface PasswordStrength {
 
 export default function RegisterForm() {
   const navigate = useNavigate();
-  const { setUser, setLoading, setError, clearError } = useAuthStore();
+  const { setLoading, setError, clearError } = useAuthStore();
 
   // Form state
   const [name, setName] = useState('');
@@ -33,6 +33,9 @@ export default function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  
+  // Success state to show the email confirmation message
+  const [isSuccess, setIsSuccess] = useState(false); 
 
   /**
    * Validate email format
@@ -77,49 +80,17 @@ export default function RegisterForm() {
    * Validate form inputs before submission
    */
   const validateForm = (): string | null => {
-    if (!name.trim()) {
-      return 'Full name is required';
-    }
-
-    if (name.trim().length < 2) {
-      return 'Name must be at least 2 characters';
-    }
-
-    if (!email.trim()) {
-      return 'Email is required';
-    }
-
-    if (!validateEmail(email)) {
-      return 'Please enter a valid email address';
-    }
-
-    if (!password) {
-      return 'Password is required';
-    }
-
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
-    }
-
-    if (!/[0-9]/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-
-    if (password !== confirmPassword) {
-      return 'Passwords do not match';
-    }
-
-    if (!agreedToTerms) {
-      return 'You must agree to the terms and conditions';
-    }
+    if (!name.trim()) return 'Full name is required';
+    if (name.trim().length < 2) return 'Name must be at least 2 characters';
+    if (!email.trim()) return 'Email is required';
+    if (!validateEmail(email)) return 'Please enter a valid email address';
+    if (!password) return 'Password is required';
+    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
+    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
+    if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
+    if (password !== confirmPassword) return 'Passwords do not match';
+    if (!agreedToTerms) return 'You must agree to the terms and conditions';
 
     return null;
   };
@@ -150,21 +121,11 @@ export default function RegisterForm() {
         password,
       };
 
-      const result = await authService.register(registerData);
+      await authService.register(registerData);
 
-      // Store user in state
-      setUser(result.user);
-
-      // Clear form
-      setName('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      setAgreedToTerms(false);
-      setLocalError(null);
-
-      // Redirect to home page
-      navigate('/', { replace: true });
+      // Show the success screen asking to check the email
+      setIsSuccess(true);
+      
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Registration failed. Please try again.';
@@ -175,6 +136,31 @@ export default function RegisterForm() {
     }
   };
 
+  // If registration was successful, shows the confirmation screen
+  if (isSuccess) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-green-200">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-brand-darkGreen/90 mb-2">Check your email</h2>
+        <p className="text-brand-brown/80 mb-6">
+          We've sent a verification link to <span className="font-bold">{email}</span>. 
+          Please click the link to activate your account.
+        </p>
+        <button
+          onClick={() => navigate('/login')}
+          className="btn-primary w-full"
+        >
+          Go to Login
+        </button>
+      </div>
+    );
+  }
+
+  // Render the form
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Error alert */}

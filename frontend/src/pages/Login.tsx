@@ -57,20 +57,7 @@ export default function Login() {
             >
               Create one now
             </Link>
-          </p>
-
-          {/* Demo credentials info */}
-          <div className="mt-6 p-4 bg-brand-cream border border-brand-mediumGreen rounded">
-            <p className="text-xs font-bold text-brand-darkGreen mb-2">
-              Demo Credentials:
-            </p>
-            <p className="text-xs text-brand-brown">
-              Email: <code className="bg-white border border-brand-mediumGreen px-1 rounded text-brand-darkGreen">test@example.com</code>
-            </p>
-            <p className="text-xs text-brand-brown mt-1">
-              Password: <code className="bg-white border border-brand-mediumGreen px-1 rounded text-brand-darkGreen">password123</code>
-            </p>
-          </div>
+          </p>          
         </div>
 
         {/* Footer link */}

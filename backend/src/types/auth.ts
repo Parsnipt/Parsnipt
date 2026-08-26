@@ -26,10 +26,14 @@ export interface User {
   tier: 'free' | 'pro' | 'enterprise';
   createdAt: string;
   updatedAt: string;
+  isVerified?: boolean;
+  verificationToken?: string
 }
 
 export interface UserWithPassword extends User {
   passwordHash: string;
+  isVerified?: boolean;
+  verificationToken?: string
 }
 
 export interface DecodedToken {

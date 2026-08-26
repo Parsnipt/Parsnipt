@@ -5,7 +5,6 @@
 
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
-import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { randomUUID } from 'crypto';
 import {
@@ -28,7 +27,6 @@ import logger from '../utils/logger.js';
 
 // Babel ESM/CJS interop fixes
 const traverse = typeof traverseModule === 'function' ? traverseModule : (traverseModule as any).default;
-const generate = typeof generateModule === 'function' ? generateModule : (generateModule as any).default;
 
 export class CodeExtractorService {
   /**
@@ -115,11 +113,59 @@ export class CodeExtractorService {
   }
 
   /**
+   * Helper to slice the RAW original source code AND capture accurate line numbers
+   * This bypasses Babel's generator to prevent trailing comments from attaching
+   * to the bottom of the code snippet.
+   */
+  private static extractRawCodeAndLines(path: any, sourceCode: string): { code: string, startLine: number, endLine: number, lineCount: number } | null {
+    let targetNode = path.node;
+    
+    // If it's a VariableDeclarator, grab the parent 'const/let' wrapper 
+    // to keep the code snippet valid, unless it's bundled with many declarations.
+    if (t.isVariableDeclarator(path.node) && path.parent && t.isVariableDeclaration(path.parent)) {
+      if (path.parent.declarations.length === 1) {
+        targetNode = path.parent;
+      }
+    }
+
+    // If it is exported, expand the snippet to include the 'export' keyword
+    if (path.parent && (t.isExportNamedDeclaration(path.parent) || t.isExportDefaultDeclaration(path.parent))) {
+      targetNode = path.parent;
+    } else if (path.parentPath?.parent && t.isExportNamedDeclaration(path.parentPath.parent)) {
+      targetNode = path.parentPath.parent;
+    }
+
+    let start = targetNode.start;
+    const end = targetNode.end;
+    let startLine = targetNode.loc?.start.line || 0;
+    const endLine = targetNode.loc?.end.line || startLine;
+
+    // Grab the top-most leading comment so it's included in the snippet
+    if (targetNode.leadingComments && targetNode.leadingComments.length > 0) {
+      const firstComment = targetNode.leadingComments[0];
+      start = Math.min(start, firstComment.start);
+      
+      // Safely update the start line to match the top comment
+      if (firstComment.loc?.start.line && firstComment.loc.start.line < startLine) {
+        startLine = firstComment.loc.start.line;
+      }
+    }
+
+    // Slice directly from the raw string
+    if (typeof start === 'number' && typeof end === 'number') {
+      const code = sourceCode.slice(start, end);
+      const lineCount = startLine > 0 ? (endLine - startLine) + 1 : code.split('\n').length;
+      return { code, startLine, endLine, lineCount };
+    }
+
+    return null;
+  }
+
+  /**
    * Traverse AST and extract code items
    */
   private static traverseAndExtract(ast: any, context: ASTAnalysisContext): void {
     traverse(ast, {
-      // Track exports
       ExportNamedDeclaration: (path: any) => {
         if (path.node.declaration) {
           if (t.isFunctionDeclaration(path.node.declaration)) {
@@ -134,20 +180,14 @@ export class CodeExtractorService {
         }
       },
 
-      // Extract functions and methods
       FunctionDeclaration: (path: any) => {
-        const item = this.extractFunctionDeclaration(path.node, context);
+        const item = this.extractFunctionDeclaration(path, context);
         if (item) context.items.push(item);
       },
 
-      // Extract arrow functions and function expressions
       VariableDeclarator: (path: any) => {
-        if (t.isArrowFunctionExpression(path.node.init) || 
-            t.isFunctionExpression(path.node.init)) {
-          const item = this.extractArrowOrExpressionFunction(
-            path.node as any,
-            context
-          );
+        if (t.isArrowFunctionExpression(path.node.init) || t.isFunctionExpression(path.node.init)) {
+          const item = this.extractArrowOrExpressionFunction(path, context);
           if (item) context.items.push(item);
         } else if (
           t.isIdentifier(path.node.id) &&
@@ -157,41 +197,47 @@ export class CodeExtractorService {
             t.isArrayExpression(path.node.init) ||
             t.isObjectExpression(path.node.init))
         ) {
-          const item = this.extractConstant(path.node as any, context);
+          const item = this.extractConstant(path, context);
           if (item) context.items.push(item);
         }
       },
 
-      // Extract class methods
       ClassMethod: (path: any) => {
         if (t.isClassMethod(path.node)) {
-          const item = this.extractClassMethod(path.node, context);
+          const item = this.extractClassMethod(path, context);
           if (item) context.items.push(item);
         }
       },
     });
   }
 
-  /**
-   * Extract function declaration
-   */
+  private static findDocComment(path: any, node: any): string | undefined {
+    let comment = extractDocComment(node);
+    if (!comment && path.parent) {
+      comment = extractDocComment(path.parent);
+    }
+    if (!comment && path.parentPath?.parent) {
+      comment = extractDocComment(path.parentPath.parent);
+    }
+    return comment;
+  }
+
   private static extractFunctionDeclaration(
-    node: t.FunctionDeclaration,
+    path: any,
     context: ASTAnalysisContext
   ): AnalyzedCodeItem | null {
     try {
+      const node = path.node as t.FunctionDeclaration;
       const name = node.id?.name || 'anonymous';
-      const code = generate(node).code;
-      const lines = code.split('\n');
-      const lineCount = lines.length;
-
-      // Get line numbers (approximation)
-      const startLine = node.loc?.start.line || 0;
-      const endLine = node.loc?.end.line || startLine + lineCount;
+      
+      // Extract code AND correctly synchronized line numbers
+      const extraction = this.extractRawCodeAndLines(path, context.sourceCode);
+      if (!extraction) return null;
+      const { code, startLine, endLine, lineCount } = extraction;
 
       const params = extractParameters(node);
       const returnType = extractReturnType(node);
-      const docComment = extractDocComment(node);
+      const docComment = this.findDocComment(path, node);
       const complexity = calculateCyclomaticComplexity(code);
 
       const metadata: CodeItemMetadata = {
@@ -203,7 +249,6 @@ export class CodeExtractorService {
         docComment,
       };
 
-      // Determine type
       let type: 'function' | 'component' | 'utility' = 'function';
       let confidence = 0.95;
 
@@ -231,27 +276,22 @@ export class CodeExtractorService {
     }
   }
 
-  /**
-   * Extract arrow function or function expression
-   */
   private static extractArrowOrExpressionFunction(
-    node: t.VariableDeclarator,
+    path: any,
     context: ASTAnalysisContext
   ): AnalyzedCodeItem | null {
     try {
+      const node = path.node as t.VariableDeclarator;
       const name = t.isIdentifier(node.id) ? node.id.name : 'anonymous';
       const func = node.init as t.ArrowFunctionExpression | t.FunctionExpression;
-
-      const code = generate(node).code;
-      const lines = code.split('\n');
-      const lineCount = lines.length;
-
-      const startLine = node.loc?.start.line || 0;
-      const endLine = node.loc?.end.line || startLine + lineCount;
+      
+      const extraction = this.extractRawCodeAndLines(path, context.sourceCode);
+      if (!extraction) return null;
+      const { code, startLine, endLine, lineCount } = extraction;
 
       const params = extractParameters(func);
       const returnType = extractReturnType(func);
-      const docComment = extractDocComment(node);
+      const docComment = this.findDocComment(path, node);
       const complexity = calculateCyclomaticComplexity(code);
 
       const metadata: CodeItemMetadata = {
@@ -263,7 +303,6 @@ export class CodeExtractorService {
         docComment,
       };
 
-      // Determine type
       let type: 'function' | 'component' | 'utility' = 'function';
       let confidence = 0.9;
 
@@ -292,29 +331,25 @@ export class CodeExtractorService {
     }
   }
 
-  /**
-   * Extract class method
-   */
   private static extractClassMethod(
-    node: t.ClassMethod,
-    _context: ASTAnalysisContext
+    path: any,
+    context: ASTAnalysisContext
   ): AnalyzedCodeItem | null {
     try {
+      const node = path.node as t.ClassMethod;
       const name = t.isIdentifier(node.key)
         ? node.key.name
         : t.isStringLiteral(node.key)
           ? node.key.value
           : 'method';
-
-      const code = generate(node).code;
-      const lines = code.split('\n');
-      const lineCount = lines.length;
-
-      const startLine = node.loc?.start.line || 0;
-      const endLine = node.loc?.end.line || startLine + lineCount;
+      
+      const extraction = this.extractRawCodeAndLines(path, context.sourceCode);
+      if (!extraction) return null;
+      const { code, startLine, endLine, lineCount } = extraction;
 
       const params = extractParameters(node);
       const returnType = extractReturnType(node);
+      const docComment = this.findDocComment(path, node);
       const complexity = calculateCyclomaticComplexity(code);
 
       const metadata: CodeItemMetadata = {
@@ -323,6 +358,7 @@ export class CodeExtractorService {
         isAsync: node.async || false,
         isArrow: false,
         isExported: false,
+        docComment,
       };
 
       return {
@@ -343,28 +379,26 @@ export class CodeExtractorService {
     }
   }
 
-  /**
-   * Extract constant
-   */
   private static extractConstant(
-    node: t.VariableDeclarator,
+    path: any,
     context: ASTAnalysisContext
   ): AnalyzedCodeItem | null {
     try {
+      const node = path.node as t.VariableDeclarator;
       if (!t.isIdentifier(node.id)) return null;
 
       const name = node.id.name;
-      const code = generate(node).code;
-
-      // Only extract if it looks like a constant (all uppercase or is exported)
+      
       if (!/^[A-Z_]+$/.test(name) && !context.exports.has(name)) {
         return null;
       }
-
-      const startLine = node.loc?.start.line || 0;
-      const endLine = node.loc?.end.line || startLine + 1;
+      
+      const extraction = this.extractRawCodeAndLines(path, context.sourceCode);
+      if (!extraction) return null;
+      const { code, startLine, endLine, lineCount } = extraction;
 
       const type = extractVariableType(node);
+      const docComment = this.findDocComment(path, node);
 
       const metadata: CodeItemMetadata = {
         parameters: [],
@@ -372,6 +406,7 @@ export class CodeExtractorService {
         isAsync: false,
         isArrow: false,
         isExported: context.exports.has(name),
+        docComment,
       };
 
       return {
@@ -381,7 +416,7 @@ export class CodeExtractorService {
         code,
         startLine,
         endLine,
-        lineCount: 1,
+        lineCount,
         complexity: 'simple',
         metadata,
         confidence: 0.95,
@@ -392,47 +427,25 @@ export class CodeExtractorService {
     }
   }
 
-  /**
-   * Filter extraction results
-   * Removes low-confidence or duplicate items
-   */
   static filterResults(items: AnalyzedCodeItem[]): AnalyzedCodeItem[] {
-    // Remove duplicates by name
     const seen = new Set<string>();
     return items.filter((item) => {
-      if (seen.has(item.name)) {
-        return false;
-      }
+      if (seen.has(item.name)) return false;
       seen.add(item.name);
-      return item.confidence >= 0.7; // Keep items with 70%+ confidence
+      return item.confidence >= 0.7;
     });
   }
 
-  /**
-   * Sort results by relevance
-   */
   static sortByRelevance(items: AnalyzedCodeItem[]): AnalyzedCodeItem[] {
     return items.sort((a, b) => {
-      // Prioritize by type (components > functions > utilities > constants)
-      const typeScore = {
-        component: 4,
-        function: 3,
-        utility: 2,
-        constant: 1,
-      };
+      const typeScore = { component: 4, function: 3, utility: 2, constant: 1 };
 
       if (typeScore[a.type as keyof typeof typeScore] !== 
           typeScore[b.type as keyof typeof typeScore]) {
         return typeScore[b.type as keyof typeof typeScore] - 
                typeScore[a.type as keyof typeof typeScore];
       }
-
-      // Then by confidence
-      if (a.confidence !== b.confidence) {
-        return b.confidence - a.confidence;
-      }
-
-      // Then by line number
+      if (a.confidence !== b.confidence) return b.confidence - a.confidence;
       return a.startLine - b.startLine;
     });
   }

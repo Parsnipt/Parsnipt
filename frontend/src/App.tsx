@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Upload from './pages/Upload';
 import Results from './pages/Results';
 import NotFound from './pages/NotFound';
@@ -25,6 +26,7 @@ function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify" element={<VerifyEmail />} />
         </Route>
 
         {/* Main application routes (protected) */}
@@ -53,10 +55,10 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Route>
+        </Route>       
 
         {/* 404 Not Found */}
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />        
       </Routes>
     </Router>
   );

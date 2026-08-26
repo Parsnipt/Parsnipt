@@ -46,6 +46,30 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
     return items;
   }, [extraction.extractionResults, filterType, searchTerm]);
 
+  /**
+   * Handle exporting results as a JSON file
+   */
+  const handleExportJSON = () => {
+    if (!extraction.extractionResults) return;
+
+    // Create a clean JSON string from the results
+    const dataStr = JSON.stringify(extraction.extractionResults, null, 2);
+    
+    // Create a blob and a temporary download link
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    
+    a.href = url;
+    // Name the file based on the original upload name
+    a.download = `${extraction.fileName.split('.')[0]}-architecture.json`;
+    
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (extraction.status === 'processing') {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -82,8 +106,7 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
         
         {/* Header & Summary Master Container */}
         <div className="bg-white rounded-2xl border-2 border-brand-brown/80 shadow-xl shadow-brand-darkBrown/10 p-6">
-          {/* Header Title & Metadata */}
-          <div className="mb-6 pb-6 border-b-2 border-brand-darkGreen/90">
+          <div className="mb-6 pb-6 border-b-2 border-brand-brown/30">
             <h1 className="text-3xl font-bold text-brand-darkGreen/90 mb-2">
               Extraction Results
             </h1>
@@ -95,8 +118,6 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
               <span className="text-brand-brown/80">{new Date(extraction.createdAt).toLocaleDateString()}</span>
             </p>
           </div>
-
-          {/* Render the core summary grid */}
           <ResultsSummary results={results} />
         </div>
 
@@ -111,7 +132,6 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
             filteredItems={filteredResults.length}
           />
 
-          {/* Item Cards inside the container */}
           <div className="mt-6">
             {filteredResults.length === 0 ? (
               <div className="text-center py-12 bg-brand-cream/30 rounded-lg border-2 border-brand-brown/80 shadow-sm">
@@ -136,14 +156,21 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
         </div>
 
         {/* Export section */}
-        <div className="bg-white rounded-2xl border-2 border-brand-brown/80 shadow-xl shadow-brand-darkBrown/10 p-6">
-          <h3 className="text-lg font-bold text-brand-darkGreen/90 mb-2">Export Results</h3>
-          <p className="text-brand-brown/80 text-sm mb-4">
-            Export functionality is coming soon! You'll be able to download results as JSON, CSV, or PDF.
-          </p>
-          <button disabled className="px-4 py-2 bg-brand-brown/60 text-brand-cream rounded font-bold cursor-not-allowed opacity-50">
-            Export (Coming Soon)
-          </button>
+        <div className="bg-white rounded-2xl border-2 border-brand-brown/80 shadow-xl shadow-brand-darkBrown/10 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-brand-darkGreen/90 mb-1">Export Results</h3>
+            <p className="text-brand-brown/80 text-sm">
+              Download your parsed architecture as a structured JSON file.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleExportJSON}
+              className="px-6 py-2 bg-brand-darkGreen/90 hover:bg-brand-mediumGreen text-brand-cream rounded-lg font-bold transition-colors shadow-sm"
+            >
+              Export JSON
+            </button>
+          </div>
         </div>
       </div>
     );

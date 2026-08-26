@@ -7,12 +7,18 @@ export async function up(knex: Knex): Promise<void> {
     table.string('password_hash', 255).notNullable();
     table.string('name', 255).notNullable();
     table.enum('tier', ['free', 'pro', 'enterprise']).notNullable().defaultTo('free');
+    
+    // Email Verification Columns
+    table.boolean('is_verified').notNullable().defaultTo(false);
+    table.string('verification_token', 255).nullable();
+    
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.fn.now());
 
     table.index('email');
     table.index('tier');
     table.index('created_at');
+    table.index('verification_token'); // Indexed for fast token lookups
   });
 }
 

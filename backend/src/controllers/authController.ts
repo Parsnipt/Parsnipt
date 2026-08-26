@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { RegisterRequest, LoginRequest } from '../types/auth.js';
 import AuthService from '../services/authService.js';
+import { ValidationError } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 
 interface SuccessResponse<T> {
@@ -16,8 +17,51 @@ interface SuccessResponse<T> {
 
 export class AuthController {
   /**
+   * Password complexity validator:
+   * - Minimum 8 characters
+   * - At least 1 uppercase letter
+   * - At least 1 lowercase letter
+   * - At least 1 number
+   */
+  private static validatePassword(password: string): void {
+    if (!password || typeof password !== 'string') {
+      throw new ValidationError('Password is required');
+    }
+
+    if (password.length < 8) {
+      throw new ValidationError('Password must be at least 8 characters long');
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      throw new ValidationError('Password must contain at least one uppercase letter');
+    }
+
+    if (!/[a-z]/.test(password)) {
+      throw new ValidationError('Password must contain at least one lowercase letter');
+    }
+
+    if (!/\d/.test(password)) {
+      throw new ValidationError('Password must contain at least one number');
+    }
+  }
+
+  /**
+   * Basic email format validator
+   */
+  private static validateEmail(email: string): void {
+    if (!email || typeof email !== 'string') {
+      throw new ValidationError('Email is required');
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      throw new ValidationError('Please provide a valid email address');
+    }
+  }
+
+  /**
    * POST /api/v1/auth/register
-   * Register new user
+   * Register new user with strict input validation
    */
   static async register(
     req: Request,
@@ -27,7 +71,20 @@ export class AuthController {
     try {
       const { email, password, name } = req.body as RegisterRequest;
 
-      const result = await AuthService.register({ email, password, name });
+      // Validate Name
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        throw new ValidationError('Full name is required');
+      }
+
+      // Validate Email & Password Complexity
+      this.validateEmail(email);
+      this.validatePassword(password);
+
+      const result = await AuthService.register({
+        email: email.trim().toLowerCase(),
+        password,
+        name: name.trim(),
+      });
 
       const response: SuccessResponse<typeof result> = {
         success: true,
@@ -53,7 +110,16 @@ export class AuthController {
     try {
       const { email, password } = req.body as LoginRequest;
 
-      const result = await AuthService.login({ email, password });
+      if (!email || !password) {
+        throw new ValidationError('Email and password are required');
+      }
+
+      this.validateEmail(email);
+
+      const result = await AuthService.login({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
       const response: SuccessResponse<typeof result> = {
         success: true,
@@ -77,8 +143,6 @@ export class AuthController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Future implementation: Invalidate token in Redis
-      // Current implementation: Acknowledge logout
       logger.info(`User logged out: ${req.userId}`);
 
       const response: SuccessResponse<{ message: string }> = {
@@ -106,15 +170,7 @@ export class AuthController {
       const { refreshToken } = req.body;
 
       if (!refreshToken) {
-        res.status(400).json({
-          success: false,
-          error: {
-            code: 'INVALID_REQUEST',
-            message: 'Refresh token is required',
-          },
-          timestamp: new Date().toISOString(),
-        });
-        return;
+        throw new ValidationError('Refresh token is required');
       }
 
       const result = AuthService.refreshAccessToken(refreshToken);
