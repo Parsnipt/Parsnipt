@@ -1,157 +1,210 @@
 /**
- * Extraction business logic
- * Handles extraction creation, retrieval, and management
- */
+ * Extraction business logic
+ * Handles extraction creation, retrieval, and management
+ */
 
 import { randomUUID } from 'crypto';
+import knex from '../config/database.js';
 import {
-  Extraction,
-  ExtractionResults,
+  Extraction,
+  ExtractionResults,
 } from '../types/extraction.js';
 import {
-  NotFoundError,
-  ValidationError,
+  NotFoundError,
+  ValidationError,
 } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 
-// In-memory extraction store (future replacement with database in Issue #5)
-const extractions = new Map<string, Extraction>();
+// Helper to map DB row to TypeScript object safely
+const mapDbToExtraction = (dbExt: any): Extraction => ({
+  id: dbExt.id,
+  userId: dbExt.user_id || dbExt.userId,
+  fileName: dbExt.file_name || dbExt.fileName,
+  fileSizeBytes: dbExt.file_size_bytes || dbExt.fileSizeBytes,
+  status: dbExt.status,
+  error: dbExt.error,
+  // Node-pg might return JSON as an object or string, this handles both
+  extractionResults: typeof dbExt.extraction_results === 'string' 
+    ? JSON.parse(dbExt.extraction_results) 
+    : (dbExt.extraction_results || dbExt.extractionResults),
+  createdAt: dbExt.created_at || dbExt.createdAt,
+  updatedAt: dbExt.updated_at || dbExt.updatedAt,
+});
 
 export class ExtractionService {
-  /**
-   * Create new extraction record
-   */
-  static async createExtraction(
-    userId: string,
-    fileName: string,
-    fileSizeBytes: number
-  ): Promise<Extraction> {
-    try {
-      const extractionId = randomUUID();
+  /**
+   * Create new extraction record
+   */
+  static async createExtraction(
+    userId: string,
+    fileName: string,
+    fileSizeBytes: number
+  ): Promise<Extraction> {
+    const extractionId = randomUUID();
+    const now = new Date().toISOString();
 
-      const extraction: Extraction = {
-        id: extractionId,
-        userId,
-        fileName,
-        fileSizeBytes,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    const newExtraction = {
+      id: extractionId,
+      user_id: userId,
+      file_name: fileName,
+      file_size_bytes: fileSizeBytes,
+      status: 'pending',
+      created_at: now,
+      updated_at: now,
+    };
 
-      extractions.set(extractionId, extraction);
+    try {
+      await knex('extractions').insert(newExtraction);
+    } catch (e) {
+      // Fallback for camelCase schema
+      await knex('extractions').insert({
+        id: extractionId,
+        userId,
+        fileName,
+        fileSizeBytes,
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
-      logger.info(`Extraction created: ${extractionId} for user: ${userId}`);
+    logger.info(`Extraction created: ${extractionId} for user: ${userId}`);
 
-      return extraction;
-    } catch (error) {
-      logger.error(`Failed to create extraction: ${error}`);
-      throw new Error('Failed to create extraction record');
-    }
-  }
+    return {
+      id: extractionId,
+      userId,
+      fileName,
+      fileSizeBytes,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
 
-  /**
-   * Get extraction by ID
-   */
-  static getExtraction(extractionId: string): Extraction {
-    const extraction = extractions.get(extractionId);
-    if (!extraction) {
-      throw new NotFoundError('Extraction');
-    }
-    return extraction;
-  }
+  /**
+   * Get extraction by ID
+   */
+  static async getExtraction(extractionId: string): Promise<Extraction> {
+    const dbExt = await knex('extractions').where({ id: extractionId }).first();
+    if (!dbExt) {
+      throw new NotFoundError('Extraction');
+    }
+    return mapDbToExtraction(dbExt);
+  }
 
-  /**
-   * Get all extractions for a user
-   */
-  static getUserExtractions(userId: string): Extraction[] {
-    return Array.from(extractions.values()).filter(
-      (e) => e.userId === userId
-    );
-  }
+  /**
+   * Get all extractions for a user
+   */
+  static async getUserExtractions(userId: string): Promise<Extraction[]> {
+    try {
+      const dbExtractions = await knex('extractions').where({ user_id: userId });
+      return dbExtractions.map(mapDbToExtraction);
+    } catch (e) {
+      const dbExtractions = await knex('extractions').where({ userId });
+      return dbExtractions.map(mapDbToExtraction);
+    }
+  }
 
-  /**
-   * Update extraction status
-   */
-  static updateExtractionStatus(
-    extractionId: string,
-    status: 'pending' | 'processing' | 'completed' | 'failed',
-    error?: string
-  ): Extraction {
-    const extraction = this.getExtraction(extractionId);
+  /**
+   * Update extraction status
+   */
+  static async updateExtractionStatus(
+    extractionId: string,
+    status: 'pending' | 'processing' | 'completed' | 'failed',
+    error?: string
+  ): Promise<Extraction> {
+    const now = new Date().toISOString();
+    
+    try {
+      await knex('extractions').where({ id: extractionId }).update({
+        status,
+        error: error || null,
+        updated_at: now
+      });
+    } catch (e) {
+      await knex('extractions').where({ id: extractionId }).update({
+        status,
+        error: error || null,
+        updatedAt: now
+      });
+    }
 
-    extraction.status = status;
-    if (error) {
-      extraction.error = error;
-    }
-    extraction.updatedAt = new Date().toISOString();
+    logger.info(`Extraction status updated: ${extractionId} -> ${status}`);
+    return this.getExtraction(extractionId);
+  }
 
-    extractions.set(extractionId, extraction);
+  /**
+   * Set extraction results
+   */
+  static async setExtractionResults(
+    extractionId: string,
+    results: ExtractionResults
+  ): Promise<Extraction> {
+    const now = new Date().toISOString();
+    
+    try {
+      await knex('extractions').where({ id: extractionId }).update({
+        extraction_results: results,
+        status: 'completed',
+        updated_at: now
+      });
+    } catch (e) {
+      await knex('extractions').where({ id: extractionId }).update({
+        extractionResults: results,
+        status: 'completed',
+        updatedAt: now
+      });
+    }
 
-    logger.info(
-      `Extraction status updated: ${extractionId} -> ${status}`
-    );
+    logger.info(`Extraction results set: ${extractionId} with ${results.summary.totalItems} items`);
+    return this.getExtraction(extractionId);
+  }
 
-    return extraction;
-  }
+  /**
+   * Delete extraction
+   */
+  static async deleteExtraction(extractionId: string, userId: string): Promise<void> {
+    const extraction = await this.getExtraction(extractionId);
 
-  /**
-   * Set extraction results
-   */
-  static setExtractionResults(
-    extractionId: string,
-    results: ExtractionResults
-  ): Extraction {
-    const extraction = this.getExtraction(extractionId);
+    // Verify ownership
+    if (extraction.userId !== userId) {
+      throw new ValidationError('Cannot delete extraction you do not own');
+    }
 
-    extraction.extractionResults = results;
-    extraction.status = 'completed';
-    extraction.updatedAt = new Date().toISOString();
+    await knex('extractions').where({ id: extractionId }).del();
+    logger.info(`Extraction deleted: ${extractionId}`);
+  }
 
-    extractions.set(extractionId, extraction);
+  /**
+   * Get extraction count for user (for rate limiting)
+   */
+  static async getUserExtractionCountToday(userId: string): Promise<number> {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
-    logger.info(
-      `Extraction results set: ${extractionId} with ${results.summary.totalItems} items`
-    );
-
-    return extraction;
-  }
-
-  /**
-   * Delete extraction
-   */
-  static deleteExtraction(extractionId: string, userId: string): void {
-    const extraction = this.getExtraction(extractionId);
-
-    // Verify ownership
-    if (extraction.userId !== userId) {
-      throw new ValidationError('Cannot delete extraction you do not own');
-    }
-
-    extractions.delete(extractionId);
-
-    logger.info(`Extraction deleted: ${extractionId}`);
-  }
-
-  /**
-   * Get extraction count for user (for rate limiting)
-   */
-  static getUserExtractionCountToday(userId: string): number {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    return Array.from(extractions.values()).filter((e) => {
-      const createdAt = new Date(e.createdAt);
-      return e.userId === userId && createdAt >= startOfDay;
-    }).length;
-  }
+    try {
+      const result = await knex('extractions')
+        .where('user_id', userId)
+        .andWhere('created_at', '>=', startOfDay)
+        .count('* as count')
+        .first();
+      return parseInt(result?.count as string || '0', 10);
+    } catch (e) {
+      const result = await knex('extractions')
+        .where('userId', userId)
+        .andWhere('createdAt', '>=', startOfDay)
+        .count('* as count')
+        .first();
+      return parseInt(result?.count as string || '0', 10);
+    }
+  }
   
   // For testing purposes only
-  static clearAll(): void {
+  static async clearAll(): Promise<void> {
     if (process.env.NODE_ENV === 'test') {
-      extractions.clear();
+      await knex('extractions').del();
     }
   }
 }
 
-export default ExtractionService;
+export default ExtractionService; 

@@ -4,22 +4,34 @@
 
 import request from 'supertest';
 import createApp from '../app.js';
+import UserRepository from '../database/repositories/userRepository.js';
+import bcryptjs from 'bcryptjs';
 
 describe('User Routes', () => {
   const app = createApp();
   let accessToken: string;
+  const testEmail = `user-test-${Date.now()}@example.com`;
+  const testPassword = 'Password123!';
 
   beforeAll(async () => {
-    // Register and login to get token
-    const registerResponse = await request(app)
-      .post('/api/v1/auth/register')
-      .send({
-        email: `user-test-${Date.now()}@example.com`,
-        password: 'Password123!',
-        name: 'Test User',
-      });
+    // Create pre-verified user directly in DB
+    const passwordHash = await bcryptjs.hash(testPassword, 10);
+    
+    await UserRepository.create({
+      id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      email: testEmail,
+      passwordHash,
+      name: 'Test User',
+      tier: 'free',
+      isVerified: true
+    });
 
-    accessToken = registerResponse.body.data.tokens.accessToken;
+    // Login to get token
+    const loginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: testEmail, password: testPassword });
+
+    accessToken = loginResponse.body.data.tokens.accessToken;
   });
 
   describe('GET /api/v1/users/me', () => {
@@ -76,7 +88,7 @@ describe('User Routes', () => {
         .post('/api/v1/users/me/password')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          currentPassword: 'Password123!',
+          currentPassword: testPassword,
           newPassword: 'NewPassword456!',
         })
         .expect(200);
@@ -102,7 +114,7 @@ describe('User Routes', () => {
       const response = await request(app)
         .post('/api/v1/users/me/password')
         .send({
-          currentPassword: 'Password123!',
+          currentPassword: testPassword,
           newPassword: 'NewPassword456!',
         })
         .expect(401);

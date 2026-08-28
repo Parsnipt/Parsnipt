@@ -6,7 +6,7 @@ This guide will walk you through setting up Parsnipt for local development on yo
 
 Before you start, ensure you have the following installed:
 
-- **Node.js 18+** - Download from [nodejs.org](https://nodejs.org/)
+- **Node.js 24+** - Download from [nodejs.org](https://nodejs.org/)
 - **npm or yarn** - Comes with Node.js by default
 - **Git** - Download from [git-scm.com](https://git-scm.com/)
 - **PostgreSQL 12+** (for database) - Download from [postgresql.org](https://www.postgresql.org/download/)
@@ -22,7 +22,7 @@ Before you start, ensure you have the following installed:
 Verify your installations by running:
 
 ```bash
-node --version        # Should be 18.0.0 or higher
+node --version        # Should be 24.0.0 or higher
 npm --version         # Should be 8.0.0 or higher
 git --version         # Any recent version
 psql --version        # Should be 12 or higher (if installed)
@@ -53,10 +53,8 @@ DATABASE_URL=postgresql://username:password@localhost:5432/parsnipt_dev
 REDIS_URL=redis://localhost:6379
 
 # Authentication
-AUTH0_DOMAIN=your-auth0-domain.auth0.com
-AUTH0_CLIENT_ID=your-client-id
-AUTH0_CLIENT_SECRET=your-client-secret
 JWT_SECRET=your-jwt-secret-key
+RESEND_API_KEY=your-resend-api-key
 
 # File Storage (S3)
 AWS_ACCESS_KEY_ID=your-aws-key
@@ -91,10 +89,8 @@ brew services start redis
 sudo systemctl start postgresql
 sudo systemctl start redis-server
 
-# 2.5 Run Database Migrations (Phase 2)
+# 2.5 Run Database Migrations
 npm run migrate
-
-Note: Migrations are not yet implemented. This will be added in Phase 2.
 
 # 2.6 Start Backend Development Server
 
@@ -121,16 +117,16 @@ cp .env.example .env
 # Then open .env and add your configuration:
 
 # API
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_API_TIMEOUT=10000
+VITE_APP_API_URL=http://localhost:5000/api
+VITE_APP_API_TIMEOUT=10000
 
 # Authentication
-REACT_APP_AUTH0_DOMAIN=your-auth0-domain.auth0.com
-REACT_APP_AUTH0_CLIENT_ID=your-client-id
+VITE_APP_AUTH0_DOMAIN=your-auth0-domain.auth0.com
+VITE_APP_AUTH0_CLIENT_ID=your-client-id
 
 # Feature Flags
-REACT_APP_ENABLE_PREVIEW=true
-REACT_APP_ENABLE_GITHUB_INTEGRATION=false
+VITE_APP_ENABLE_PREVIEW=true
+VITE_APP_ENABLE_GITHUB_INTEGRATION=false
 
 # 3.4 Start Frontend Development Server
 npm run dev
@@ -176,7 +172,7 @@ npm run test          # Run tests
 npm test:watch       # Run tests in watch mode
 npm run lint          # Run ESLint
 npm run format        # Format code with Prettier
-npm run migrate       # Run database migrations (Phase 2)
+npm run migrate       # Run database migrations
 npm run seed          # Seed database with sample data (Phase 2)
 
 Frontend:
@@ -213,7 +209,7 @@ taskkill /PID <PID> /F
 # Backend
 PORT=5001
 # Frontend
-REACT_APP_API_URL=http://localhost:5001/api  
+VITE_APP_API_URL=http://localhost:5001/api  
 ```
 
 **Database Connection Error**
@@ -262,9 +258,9 @@ kill -9 <PID>
 # Or use a different port in .env
 PORT=5001
 ```
-## Database Setup (Phase 2)
+## Database Setup 
 
-Database schema and migrations will be added in Phase 2. For now, you can:
+Database schema and migrations:
 
 1. Manually create the database
 ```bash

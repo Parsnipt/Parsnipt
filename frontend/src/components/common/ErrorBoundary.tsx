@@ -45,7 +45,8 @@ export default function ErrorBoundary({
               <p className="text-gray-600 text-center mb-4">
                 We're sorry for the inconvenience. Please try refreshing the page.
               </p>
-              {process.env.NODE_ENV === 'development' && (
+              {/* Checking for development environment */}
+              {import.meta.env.DEV && (
                 <div className="bg-red-50 border border-red-300 rounded p-3 mb-4">
                   <p className="text-xs font-mono text-red-800 break-words">
                     {safeError.message}

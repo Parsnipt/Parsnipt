@@ -146,6 +146,29 @@ Check API health status (no authentication required).
 
 #### POST /auth/register
 
+#### GET /auth/verify/:token
+
+Verify a newly registered user's email address.
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Email verified successfully"
+}
+```
+
+Response (400 Bad Request - Expired/Invalid):
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_TOKEN",
+    "message": "Verification failed. The link may have expired."
+  }
+}
+```
+
 Register a new user account.
 
 **Request:**
@@ -515,5 +538,5 @@ Official SDKs coming in Phase 2:
 
 ---
 
-**Last Updated:** July 2026  
-**Next Update:** October 2026 (Phase 1 completion)
+**Last Updated:** August 27th 2026  
+**Next Update:** October 2026

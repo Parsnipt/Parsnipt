@@ -90,7 +90,7 @@ This document tracks environmental quirks, dependency conflicts, and developer "
 
 ## Frontend: 
 
-## Issue 6 (React/Vite 8) Setup & Node 24 Quirks
+### Issue 6 (React/Vite 8) Setup & Node 24 Quirks
 
 During the initialization of the React frontend (Issue #6), we encountered several environment and build-time issues related to Vite 8 and Node.js versions.
 
@@ -141,19 +141,17 @@ During the implementation of our authentication flows, we resolved a few specifi
 * **Cause:** The implementation of `ProtectedRoute` successfully restricted unauthenticated access, immediately redirecting the test runner away from the Home page to the Login page.
 * **Fix:** Updated the assertions in `App.test.tsx` to expect the text from the Login page (`/Extract code smarter/i`) instead of the Home page to reflect the new default routing behavior.
 
-## Issue 7 - Refactor (08/26)- Authentication Implementation 
-
-### Vite Import Resolution Errors
+### 4. Vite Import Resolution Errors
 **Symptom:** Vite build crashes or TypeScript throws "Cannot find module" errors on local files.
 **Cause:** Node.js-style ESM imports with `.js` extensions were utilized inside a Vite React environment, which expects extensionless imports for `.ts` and `.tsx` files.
 **Solution:** Strip all `.js` extensions from local module imports in frontend `.ts` and `.tsx` files.
 
-### Duplicate & Disappearing Form Errors
+### 5. Duplicate & Disappearing Form Errors
 **Symptom:** API error messages render twice (global and local) and disappear instantly when inputs re-enable.
 **Cause:** A state conflict occurs between local component error tracking and global Zustand error tracking. This is compounded by `onFocus` clear handlers triggering immediately when the browser returns focus to the input field after a failed submission.
 **Solution:** Route all API-level `catch` errors exclusively to the global `useAuthStore` error state, reserving local state strictly for client-side field validation.
 
-### JSDOM Form Validation Test Failures
+### 6. JSDOM Form Validation Test Failures
 **Symptom:** React Testing Library tests fail to catch required field validation errors, or components render multiple times causing "multiple elements found" errors.
 **Cause:** 
 1. Simulating `fireEvent.click` on a submit button triggers the native HTML5 `required` block within JSDOM, preventing the React `onSubmit` handler from executing.
@@ -184,3 +182,4 @@ During the implementation of the code preview interface, we had to handle enviro
 * **Symptom:** Tests rendering the `CodePreview` component crash Vitest immediately because `jsdom` lacks the complex web APIs required to render the full Monaco Editor.
 * **Cause:** `@monaco-editor/react` tries to mount real browser-based text editing engine nodes that don't exist in a headless Node environment.
 * **Fix:** Utilized `vi.mock()` at the top of the test file to intercept imports of `@monaco-editor/react` and replace them with a simple, safe `<div>` dummy component during test execution.
+### (Note: Monaco Editor was subsequently purged from the codebase in favor of a lightweight custom syntax highlighter to improve performance)

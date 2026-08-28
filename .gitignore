@@ -59,6 +59,8 @@ docker-compose.*.yml
 public/build/
 coverage/
 storybook-static/
+playwright-report/
+test-results/
 
 # Sandpack / sandbox artifacts
 .sandpack/

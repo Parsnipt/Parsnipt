@@ -45,7 +45,7 @@ export class ExtractionController {
       // Get user tier for file size limit
       let userTier: 'free' | 'pro' | 'enterprise' = 'free';
       try {
-        const user = AuthService.getUser(req.userId);
+        const user = await AuthService.getUser(req.userId);
         userTier = user.tier as 'free' | 'pro' | 'enterprise';
       } catch (error) {
         logger.warn(`Could not determine user tier for: ${req.userId}`);
@@ -66,7 +66,7 @@ export class ExtractionController {
       }
 
       // Check rate limit (10 extractions/day for free tier)
-      const extractionCountToday = ExtractionService.getUserExtractionCountToday(req.userId);
+      const extractionCountToday = await ExtractionService.getUserExtractionCountToday(req.userId);
       const dailyLimit = userTier === 'free' ? 10 : 100;
 
       if (extractionCountToday >= dailyLimit) {
@@ -94,7 +94,7 @@ export class ExtractionController {
       );
 
       // Update status to processing
-      ExtractionService.updateExtractionStatus(extraction.id, 'processing');
+      await ExtractionService.updateExtractionStatus(extraction.id, 'processing');
 
       // TODO: Queue for extraction engine (async job)
       // Ran as a background "fire-and-forget" process
@@ -143,7 +143,7 @@ export class ExtractionController {
         throw new AuthenticationError('User ID not found in request');
       }
 
-      const extractions = ExtractionService.getUserExtractions(req.userId);
+      const extractions = await ExtractionService.getUserExtractions(req.userId);
 
       const response: SuccessResponse<typeof extractions> = {
         success: true,
@@ -173,7 +173,7 @@ export class ExtractionController {
 
       const { id } = req.params;
 
-      const extraction = ExtractionService.getExtraction(id);
+      const extraction = await ExtractionService.getExtraction(id);
 
       // Verify ownership
       if (extraction.userId !== req.userId) {
@@ -209,7 +209,7 @@ export class ExtractionController {
       const { id } = req.params;
 
       // Verify ownership and delete
-      ExtractionService.deleteExtraction(id, req.userId);
+      await ExtractionService.deleteExtraction(id, req.userId);
 
       const response: SuccessResponse<{ message: string }> = {
         success: true,
@@ -225,7 +225,7 @@ export class ExtractionController {
 
   /**
    * POST /api/v1/extractions/:id/export
-   * Export extraction results (placeholder for Phase 2)
+   * Export extraction results
    */
   static async exportExtraction(
     req: Request,
@@ -242,7 +242,7 @@ export class ExtractionController {
       // Variable ready for Phase 2, currently commented out to avoid unused variable errors
       // const { format = 'json' } = req.body; 
 
-      const extraction = ExtractionService.getExtraction(id);
+      const extraction = await ExtractionService.getExtraction(id);
 
       // Verify ownership
       if (extraction.userId !== req.userId) {

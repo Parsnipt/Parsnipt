@@ -11,7 +11,8 @@
    - **Email**: Valid email address
    - **Password**: Strong password (8+ chars, uppercase, lowercase, number)
 4. Agree to terms and click "Create Account"
-5. You're ready to upload!
+5. Check your email for the verification link and click it to activate your account.
+6. You're ready to log in and upload!
 
 ### Logging In
 

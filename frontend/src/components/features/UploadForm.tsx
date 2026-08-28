@@ -26,6 +26,7 @@ export default function UploadForm() {
   const { user } = useAuthStore();
   const {
     addExtraction,
+    updateExtraction,
     setUploading,
     setUploadProgress,
     setError,
@@ -79,6 +80,34 @@ export default function UploadForm() {
 
     return null;
   };
+
+  /**
+   * Poll extraction status until completion
+   */
+  const pollForCompletion = useCallback(
+    async (extractionId: string) => {
+      try {
+        const completed = await extractionService.pollExtractionStatus(extractionId);
+        
+        updateExtraction(extractionId, {
+          status: completed.status,
+          extractionResults: completed.extractionResults,
+          error: completed.error,
+        });
+
+        // Transport immediately upon successful polling
+        navigate(`/results/${extractionId}`);
+      } catch (error) {
+        console.error('Error polling extraction status:', error);
+        setError('Failed to complete extraction processing');
+      } finally {
+        setIsSubmitting(false);
+        setUploading(false);
+        setLocalUploadProgress(0);
+      }
+    },
+    [navigate, updateExtraction, setError, setUploading]
+  );
 
   /**
    * Handle file upload
@@ -136,35 +165,8 @@ export default function UploadForm() {
         setLocalUploadProgress(0);
       }
     },
-    [user, addExtraction, setUploading, setUploadProgress, setError, clearError, navigate]
+    [user, addExtraction, setUploading, setUploadProgress, setError, clearError, navigate, pollForCompletion]
   );
-
-  /**
-   * Poll extraction status until completion
-   */
-  const pollForCompletion = async (extractionId: string) => {
-    try {
-      const completed = await extractionService.pollExtractionStatus(extractionId);
-      
-      const { updateExtraction } = useExtractionStore.getState();
-      updateExtraction(extractionId, {
-        status: completed.status,
-        extractionResults: completed.extractionResults,
-        error: completed.error,
-      });
-
-      // Transport immediately upon successful polling
-      navigate(`/results/${extractionId}`);
-    } catch (error) {
-      console.error('Error polling extraction status:', error);
-      const { setError: storeSetError } = useExtractionStore.getState();
-      storeSetError('Failed to complete extraction processing');
-    } finally {
-      setIsSubmitting(false);
-      setUploading(false);
-      setLocalUploadProgress(0);
-    }
-  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();

@@ -176,7 +176,8 @@ We welcome contributions of all types—bug reports, feature requests, documenta
 
 **Frontend**
 - React 18+ with TypeScript
-- Monaco Editor for code display and syntax highlighting
+- React Syntax Highlighter for code display and syntax highlighting
+- Custom JWT & Bcrypt Authentication with Resend Email Verification
 - Tailwind CSS for styling
 - Zustand for lightweight state management
 - Axios or Fetch API for HTTP requests

@@ -6,6 +6,7 @@
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
+import knex from '../config/database.js';
 import {
   RegisterRequest,
   LoginRequest,
@@ -20,25 +21,18 @@ import {
 } from '../utils/errors.js';
 import logger from '../utils/logger.js';
 
-// In-memory user store
-const users = new Map<string, UserWithPassword>();
-
-// Pre-populated test user for development (Auto-verified)
-if (process.env.NODE_ENV !== 'production') {
-  const testUser: UserWithPassword = {
-    id: 'test-user-123',
-    email: 'test@example.com',
-    name: 'Test User',
-    tier: 'free',
-    passwordHash: bcryptjs.hashSync('password123', 10),
-    isVerified: true, // Test user is pre-verified
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  users.set(testUser.id, testUser);
-  console.log('Running in Development Mode: Test user account injected.');
-};
+// Helper to map DB row to TypeScript object safely
+const mapDbToUser = (dbUser: any): UserWithPassword => ({
+  id: dbUser.id,
+  email: dbUser.email,
+  name: dbUser.name,
+  tier: dbUser.tier,
+  passwordHash: dbUser.password_hash || dbUser.passwordHash,
+  isVerified: dbUser.is_verified === undefined ? dbUser.isVerified : dbUser.is_verified,
+  verificationToken: dbUser.verification_token || dbUser.verificationToken,
+  createdAt: dbUser.created_at || dbUser.createdAt,
+  updatedAt: dbUser.updated_at || dbUser.updatedAt
+});
 
 export class AuthService {
   private static validateEmail(email: string): void {
@@ -79,18 +73,33 @@ export class AuthService {
    * Verify Email Token
    */
   static async verifyEmail(token: string): Promise<void> {
-    const user = Array.from(users.values()).find(u => u.verificationToken === token);
+    // Check both potential column names just to be safe
+    const dbUser = await knex('users')
+      .where('verification_token', token)
+      .orWhere('verificationToken', token)
+      .first();
     
-    if (!user) {
+    if (!dbUser) {
       throw new ValidationError('Invalid or expired verification token');
     }
 
-    user.isVerified = true;
-    user.verificationToken = undefined; // Clear the token
-    user.updatedAt = new Date().toISOString();
+    await knex('users').where({ id: dbUser.id }).update({
+      is_verified: true,
+      isVerified: true, // Write both to support either migration style
+      verification_token: null,
+      verificationToken: null,
+      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }).catch(() => {
+      // Fallback if writing both column styles throws a constraint error
+      return knex('users').where({ id: dbUser.id }).update({
+        is_verified: true,
+        verification_token: null,
+        updated_at: new Date().toISOString()
+      });
+    });
     
-    users.set(user.id, user);
-    logger.info(`User email verified: ${user.email}`);
+    logger.info(`User email verified: ${dbUser.email}`);
   }
 
   static async register(request: RegisterRequest): Promise<{ user: User; tokens: AuthTokens }> {
@@ -100,55 +109,64 @@ export class AuthService {
     this.validateEmail(email);
     this.validatePassword(password);
 
-    const existingUser = Array.from(users.values()).find((u) => u.email === email);
+    const existingUser = await knex('users').where({ email }).first();
     if (existingUser) throw new ValidationError('User with this email already exists');
 
     const passwordHash = await this.hashPassword(password);
     const userId = randomUUID();
-    const verificationToken = randomUUID(); // Generate secure token
+    const verificationToken = randomUUID();
+    const now = new Date().toISOString();
 
-    const newUser: UserWithPassword = {
+    const newUser = {
       id: userId,
       email,
       name,
       tier: 'free',
-      passwordHash,
-      isVerified: false, // LOCK ACCOUNT
-      verificationToken,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      password_hash: passwordHash,
+      is_verified: false,
+      verification_token: verificationToken,
+      created_at: now,
+      updated_at: now,
     };
 
-    users.set(userId, newUser);
+    // Insert into DB. We try snake_case first, fallback to camelCase
+    try {
+      await knex('users').insert(newUser);
+    } catch (e) {
+      await knex('users').insert({
+        id: userId, email, name, tier: 'free', passwordHash, isVerified: false, verificationToken, createdAt: now, updatedAt: now
+      });
+    }
+
     logger.info(`User registered: ${email}`);
 
-    // MOCK EMAIL SENDER
+    // TODO: Connect this to Resend in Phase 2
     console.log('\n======================================================');
     console.log(`📩 MOCK EMAIL SENT TO: ${email}`);
     console.log(`Subject: Verify your Parsnipt Account`);
     console.log(`Body: Click here to verify your account:`);
     console.log(`http://localhost:3000/verify?token=${verificationToken}`);
     console.log('======================================================\n');
-    // -------------------------
 
     const tokens = this.generateTokens(userId, email);
-    const { passwordHash: _, ...userWithoutPassword } = newUser;
-
-    return { user: userWithoutPassword, tokens };
+    
+    return { 
+      user: { id: userId, email, name, tier: 'free', isVerified: false, createdAt: now, updatedAt: now }, 
+      tokens 
+    };
   }
 
   static async login(request: LoginRequest): Promise<{ user: User; tokens: AuthTokens }> {
     const { email, password } = request;
-
     if (!email || !password) throw new ValidationError('Email and password are required');
 
-    const user = Array.from(users.values()).find((u) => u.email === email);
-    if (!user) throw new AuthenticationError('Invalid email or password');
+    const dbUser = await knex('users').where({ email }).first();
+    if (!dbUser) throw new AuthenticationError('Invalid email or password');
 
+    const user = mapDbToUser(dbUser);
     const isPasswordValid = await this.comparePasswords(password, user.passwordHash);
     if (!isPasswordValid) throw new AuthenticationError('Invalid email or password');
 
-    // ENFORCE EMAIL VERIFICATION
     if (!user.isVerified) {
       throw new AuthenticationError('Please check your email and verify your account before logging in.');
     }
@@ -160,129 +178,94 @@ export class AuthService {
     return { user: userWithoutPassword, tokens };
   }
 
-  /**
-   * Verify JWT token
-   */
-  static verifyToken(token: string): { userId: string; email: string } {
-    try {
-      const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-      const decoded = jwt.verify(token, jwtSecret) as {
-        userId: string;
-        email: string;
-        iat: number;
-        exp: number;
-      };
-      return { userId: decoded.userId, email: decoded.email };
-    } catch (error) {
-      throw new AuthenticationError('Invalid or expired token');
-    }
-  }
+  static verifyToken(token: string): { userId: string; email: string } {
+    try {
+      const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+      const decoded = jwt.verify(token, jwtSecret) as { userId: string; email: string };
+      return { userId: decoded.userId, email: decoded.email };
+    } catch (error) {
+      throw new AuthenticationError('Invalid or expired token');
+    }
+  }
 
-  /**
-   * Refresh access token
-   */
-  static refreshAccessToken(refreshToken: string): { accessToken: string; expiresIn: number } {
-    try {
-      const refreshSecret = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret-change-in-production';
-      const decoded = jwt.verify(refreshToken, refreshSecret) as {
-        userId: string;
-        email: string;
-      };
+  static refreshAccessToken(refreshToken: string): { accessToken: string; expiresIn: number } {
+    try {
+      const refreshSecret = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret-change-in-production';
+      const decoded = jwt.verify(refreshToken, refreshSecret) as { userId: string; email: string };
 
-      const newAccessToken = jwt.sign(
-        { userId: decoded.userId, email: decoded.email },
-        process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-        { expiresIn: '24h' }
-      );
+      const newAccessToken = jwt.sign(
+        { userId: decoded.userId, email: decoded.email },
+        process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+        { expiresIn: '24h' }
+      );
 
-      return {
-        accessToken: newAccessToken,
-        expiresIn: 86400,
-      };
-    } catch (error) {
-      throw new AuthenticationError('Invalid or expired refresh token');
-    }
-  }
+      return { accessToken: newAccessToken, expiresIn: 86400 };
+    } catch (error) {
+      throw new AuthenticationError('Invalid or expired refresh token');
+    }
+  }
 
-  /**
-   * Get user by ID
-   */
-  static getUser(userId: string): User {
-    const user = users.get(userId);
-    if (!user) {
-      throw new NotFoundError('User');
-    }
+  static async getUser(userId: string): Promise<User> {
+    const dbUser = await knex('users').where({ id: userId }).first();
+    if (!dbUser) throw new NotFoundError('User');
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
-  }
+    const user = mapDbToUser(dbUser);
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 
-  /**
-   * Update user profile
-   */
-  static updateUser(
-    userId: string,
-    updates: { name?: string; email?: string }
-  ): User {
-    const user = users.get(userId);
-    if (!user) {
-      throw new NotFoundError('User');
-    }
+  static async updateUser(userId: string, updates: { name?: string; email?: string }): Promise<User> {
+    const dbUser = await knex('users').where({ id: userId }).first();
+    if (!dbUser) throw new NotFoundError('User');
 
-    if (updates.email) {
-      this.validateEmail(updates.email);
-      const existingUser = Array.from(users.values()).find(
-        (u) => u.email === updates.email && u.id !== userId
-      );
-      if (existingUser) {
-        throw new ValidationError('Email already in use');
-      }
-      user.email = updates.email;
-    }
+    if (updates.email) {
+      this.validateEmail(updates.email);
+      const existingUser = await knex('users').where({ email: updates.email }).whereNot({ id: userId }).first();
+      if (existingUser) throw new ValidationError('Email already in use');
+    }
 
-    if (updates.name) {
-      user.name = updates.name;
-    }
+    const updateData: any = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.email) updateData.email = updates.email;
+    updateData.updated_at = new Date().toISOString();
 
-    user.updatedAt = new Date().toISOString();
-    users.set(userId, user);
+    try {
+      await knex('users').where({ id: userId }).update(updateData);
+    } catch (e) {
+      // Fallback for camelCase schema
+      updateData.updatedAt = updateData.updated_at;
+      delete updateData.updated_at;
+      await knex('users').where({ id: userId }).update(updateData);
+    }
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
-  }
+    return this.getUser(userId);
+  }
 
-  /**
-   * Change user password
-   */
-  static async changePassword(
-    userId: string,
-    currentPassword: string,
-    newPassword: string
-  ): Promise<void> {
-    const user = users.get(userId);
-    if (!user) {
-      throw new NotFoundError('User');
-    }
+  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const dbUser = await knex('users').where({ id: userId }).first();
+    if (!dbUser) throw new NotFoundError('User');
 
-    // Verify current password
-    const isPasswordValid = await this.comparePasswords(
-      currentPassword,
-      user.passwordHash
-    );
-    if (!isPasswordValid) {
-      throw new AuthenticationError('Current password is incorrect');
-    }
+    const user = mapDbToUser(dbUser);
+    const isPasswordValid = await this.comparePasswords(currentPassword, user.passwordHash);
+    if (!isPasswordValid) throw new AuthenticationError('Current password is incorrect');
 
-    // Validate new password
-    this.validatePassword(newPassword);
+    this.validatePassword(newPassword);
+    const passwordHash = await this.hashPassword(newPassword);
 
-    // Hash and update password
-    user.passwordHash = await this.hashPassword(newPassword);
-    user.updatedAt = new Date().toISOString();
-    users.set(userId, user);
+    try {
+      await knex('users').where({ id: userId }).update({ 
+        password_hash: passwordHash, 
+        updated_at: new Date().toISOString() 
+      });
+    } catch (e) {
+      await knex('users').where({ id: userId }).update({ 
+        passwordHash, 
+        updatedAt: new Date().toISOString() 
+      });
+    }
 
-    logger.info(`Password changed for user: ${user.email}`);
-  }
+    logger.info(`Password changed for user: ${user.email}`);
+  }
 }
 
 export default AuthService;

@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('File Upload Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[placeholder="your@email.com"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'password123');
+    await page.fill('input[placeholder="your@email.com"]', 'dev@example.com');
+    await page.fill('input[type="password"]', 'Password123!');
     await page.click('button:has-text("Login")');
     await page.waitForURL('/');
   });

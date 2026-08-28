@@ -4,22 +4,34 @@
 
 import request from 'supertest';
 import createApp from '../app.js';
+import UserRepository from '../database/repositories/userRepository.js';
+import bcryptjs from 'bcryptjs';
 
 describe('Extraction Routes', () => {
   const app = createApp();
   let accessToken: string;
 
   beforeAll(async () => {
-    // Register and login to get token
-    const registerResponse = await request(app)
-      .post('/api/v1/auth/register')
-      .send({
-        email: `extraction-test-${Date.now()}@example.com`,
-        password: 'Password123!',
-        name: 'Extraction Test User',
-      });
+    // Create pre-verified user directly in DB
+    const email = `extraction-test-${Date.now()}@example.com`;
+    const password = 'Password123!';
+    const passwordHash = await bcryptjs.hash(password, 10);
+    
+    await UserRepository.create({
+      id: '88888888-8888-8888-8888-888888888888',
+      email,
+      passwordHash,
+      name: 'Extraction Test User',
+      tier: 'free',
+      isVerified: true
+    });
 
-    accessToken = registerResponse.body.data.tokens.accessToken;
+    // Login to get token
+    const loginResponse = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email, password });
+
+    accessToken = loginResponse.body.data.tokens.accessToken;
   });
 
   describe('POST /api/v1/extractions', () => {
@@ -138,15 +150,24 @@ describe('Extraction Routes', () => {
     });
 
     it('should return empty list for new user', async () => {
-      const newUserResponse = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: `empty-user-${Date.now()}@example.com`,
-          password: 'Password123!',
-          name: 'Empty User',
-        });
+      const email = `empty-user-${Date.now()}@example.com`;
+      const password = 'Password123!';
+      const passwordHash = await bcryptjs.hash(password, 10);
+      
+      await UserRepository.create({
+        id: '99999999-9999-9999-9999-999999999999',
+        email,
+        passwordHash,
+        name: 'Empty User',
+        tier: 'free',
+        isVerified: true
+      });
 
-      const newUserToken = newUserResponse.body.data.tokens.accessToken;
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email, password });
+
+      const newUserToken = loginResponse.body.data.tokens.accessToken;
 
       const response = await request(app)
         .get('/api/v1/extractions')
@@ -253,15 +274,24 @@ describe('Extraction Routes', () => {
     });
 
     it('should prevent deleting another user\'s extraction', async () => {
-      const otherUserResponse = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: `other-user-${Date.now()}@example.com`,
-          password: 'Password123!',
-          name: 'Other User',
-        });
+      const email = `other-user-${Date.now()}@example.com`;
+      const password = 'Password123!';
+      const passwordHash = await bcryptjs.hash(password, 10);
+      
+      await UserRepository.create({
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        email,
+        passwordHash,
+        name: 'Other User',
+        tier: 'free',
+        isVerified: true
+      });
 
-      const otherUserToken = otherUserResponse.body.data.tokens.accessToken;
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email, password });
+
+      const otherUserToken = loginResponse.body.data.tokens.accessToken;
 
       const response = await request(app)
         .delete(`/api/v1/extractions/${extractionId}`)
@@ -306,16 +336,24 @@ describe('Extraction Routes', () => {
 
   describe('Rate Limiting', () => {
     it('should allow 10 extractions per day for free tier', async () => {
-        const uniqueEmail = `free-user-${Date.now()}-${Math.random()}@example.com`;
-        const freeUserResponse = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: uniqueEmail,
-          password: 'Password123!',
-          name: 'Free User',
-        });
+      const email = `free-user-${Date.now()}-${Math.random()}@example.com`;
+      const password = 'Password123!';
+      const passwordHash = await bcryptjs.hash(password, 10);
+      
+      await UserRepository.create({
+        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        email,
+        passwordHash,
+        name: 'Free User',
+        tier: 'free',
+        isVerified: true
+      });
 
-      const freeUserToken = freeUserResponse.body.data.tokens.accessToken;
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email, password });
+
+      const freeUserToken = loginResponse.body.data.tokens.accessToken;
 
       for (let i = 0; i < 10; i++) {
         await request(app)
@@ -341,14 +379,24 @@ describe('Extraction Routes', () => {
 
     beforeAll(async () => {
       // Register a brand new user just for validation, bypassing the 10-upload rate limit
-      const freshUserResponse = await request(app)
-        .post('/api/v1/auth/register')
-        .send({
-          email: `validation-test-${Date.now()}@example.com`,
-          password: 'Password123!',
-          name: 'Validation Test User',
-        });
-      freshAccessToken = freshUserResponse.body.data.tokens.accessToken;
+      const email = `validation-test-${Date.now()}@example.com`;
+      const password = 'Password123!';
+      const passwordHash = await bcryptjs.hash(password, 10);
+      
+      await UserRepository.create({
+        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+        email,
+        passwordHash,
+        name: 'Validation Test User',
+        tier: 'free',
+        isVerified: true
+      });
+
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email, password });
+
+      freshAccessToken = loginResponse.body.data.tokens.accessToken;
     });
 
     it('should accept .js files', async () => {

@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { AuthUser } from '../types/auth.js';
+import { AuthUser } from '../types/auth';
 
 interface AuthStore {
   // User data

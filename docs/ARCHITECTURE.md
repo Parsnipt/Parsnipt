@@ -38,7 +38,7 @@ graph TB
 
 ### Frontend
 - **Framework:** React 18+ with TypeScript
-- **Editor:** Monaco Editor (code syntax highlighting)
+- **Editor:** React Syntax Highlighter (code syntax highlighting)
 - **Preview:** React-Sandpack (component sandboxing)
 - **State:** Zustand (lightweight state management)
 - **Styling:** Tailwind CSS
@@ -51,8 +51,8 @@ graph TB
 - **Language:** TypeScript
 - **AST Parsing:** @babel/parser (JavaScript/TypeScript)
 - **Code Generation:** Recast
-- **Database:** PostgreSQL (primary), Redis (cache)
-- **Authentication:** Auth0 or Supabase Auth
+- **Database:** PostgreSQL (via Knex.js) with In-Memory / Local State Fallbacks
+- **Authentication:** Custom JWT Authentication with Bcrypt and Resend Email Verification
 - **File Storage:** AWS S3 or Cloudinary
 
 ### DevOps & Deployment
@@ -115,21 +115,23 @@ graph LR
 
 ### Authentication Flow
 
-User Login → Auth0/Supabase → JWT Token → Stored in Browser↓API Request with JWT → Backend Validation → Route Handler↓Response with Data
+User submits credentials via Axios -> Express Route -> Database verification -> JWT Generation -> Stored in Browser ↓ API Request with Bearer Token -> Express JWT Middleware Validation -> Protected Route Handler -> Response with Data
 ```mermaid
 sequenceDiagram
-    actor User
-    participant Browser
-    participant Auth as Auth0/Supabase
-    participant Backend
+    actor User
+    participant Browser
+    participant Backend as Express Backend
+    participant DB as PostgreSQL DB
 
-    User->>Browser: Login
-    Browser->>Auth: Request authentication
-    Auth->>Browser: Return JWT Token
-    Browser->>Browser: Store in localStorage
-    Browser->>Backend: API Request + JWT
-    Backend->>Backend: Validate JWT
-    Backend->>Browser: Response with Data
+    User->>Browser: Enter credentials / Click Login
+    Browser->>Backend: POST /api/v1/auth/login
+    Backend->>DB: Verify user credentials
+    DB-->>Backend: User record valid
+    Backend->>Browser: Return Access & Refresh Tokens
+    Browser->>Browser: Store tokens in localStorage
+    Browser->>Backend: API Request + Bearer Token
+    Backend->>Backend: Custom JWT Middleware Validation
+    Backend->>Browser: Response with Protected Data
 ```
 
 ### Rate Limiting Strategy
@@ -137,7 +139,7 @@ sequenceDiagram
 - Free tier: 10 requests/day
 - Pro tier: 100 requests/day
 - Enterprise: Unlimited
-- Implementation: Redis-based counter with sliding window
+- Implementation: Express rate-limiter middleware (express-rate-limit) with test environment bypass rules
 
 ## Database Schema (Phase 1)
 

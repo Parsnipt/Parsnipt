@@ -33,12 +33,14 @@ describe('UserRepository', () => {
         passwordHash,
         name: 'Test User',
         tier: 'free',
+        isVerified: true,
       });
 
       expect(user.id).toBe('11111111-1111-1111-1111-111111111111');
       expect(user.email).toBe('test@example.com');
       expect(user.name).toBe('Test User');
       expect(user.tier).toBe('free');
+      expect(user.isVerified).toBe(true);
     });
   });
 
@@ -51,6 +53,7 @@ describe('UserRepository', () => {
         passwordHash,
         name: 'Find User',
         tier: 'pro',
+        isVerified: true,
       });
 
       const user = await UserRepository.findByEmail('find@example.com');
@@ -73,11 +76,13 @@ describe('UserRepository', () => {
         passwordHash,
         name: 'Find by ID',
         tier: 'free',
+        isVerified: false,
       });
 
       const user = await UserRepository.findById('33333333-3333-3333-3333-333333333333');
       expect(user).not.toBeNull();
       expect(user?.id).toBe('33333333-3333-3333-3333-333333333333');
+      expect(user?.isVerified).toBe(false);
     });
   });
 
@@ -90,10 +95,12 @@ describe('UserRepository', () => {
         passwordHash,
         name: 'Update User',
         tier: 'free',
+        isVerified: false,
       });
 
-      const updated = await UserRepository.update('44444444-4444-4444-4444-444444444444', { name: 'Updated' });
+      const updated = await UserRepository.update('44444444-4444-4444-4444-444444444444', { name: 'Updated', isVerified: true });
       expect(updated.name).toBe('Updated');
+      expect(updated.isVerified).toBe(true);
     });
   });
 
@@ -106,6 +113,7 @@ describe('UserRepository', () => {
         passwordHash,
         name: 'Delete User',
         tier: 'free',
+        isVerified: true,
       });
 
       await UserRepository.delete('55555555-5555-5555-5555-555555555555');

@@ -27,7 +27,7 @@ describe('LoginForm', () => {
     renderWithRouter(<LoginForm />);
 
     const submitButton = screen.getByRole('button', { name: /login/i });
-    fireEvent.submit(submitButton);
+    fireEvent.click(submitButton);
 
     expect(screen.getByText(/email is required/i)).toBeInTheDocument();
   });
@@ -39,7 +39,7 @@ describe('LoginForm', () => {
     fireEvent.change(emailInput, { target: { value: 'notanemail' } });
 
     const submitButton = screen.getByRole('button', { name: /login/i });
-    fireEvent.submit(submitButton);
+    fireEvent.click(submitButton);
 
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe('LoginForm', () => {
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
 
     const submitButton = screen.getByRole('button', { name: /login/i });
-    fireEvent.submit(submitButton);
+    fireEvent.click(submitButton);
 
     expect(screen.getByText(/password is required/i)).toBeInTheDocument();
   });
@@ -60,7 +60,7 @@ describe('LoginForm', () => {
     renderWithRouter(<LoginForm />);
 
     const submitButton = screen.getByRole('button', { name: /login/i });
-    fireEvent.submit(submitButton);
+    fireEvent.click(submitButton);
 
     expect(screen.getByText(/email is required/i)).toBeInTheDocument();
 

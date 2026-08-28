@@ -11,7 +11,7 @@ import logger from '../utils/logger.js';
 
 export class CodeExtractionController {
   /**
-   * Process extraction (called async after file upload)
+   * Process extraction
    * Reads file, extracts code items, saves results
    */
   static async processExtraction(extractionId: string): Promise<void> {
@@ -19,12 +19,16 @@ export class CodeExtractionController {
 
     try {
       // Get extraction record
-      const extraction = ExtractionService.getExtraction(extractionId);
+      const extraction = await ExtractionService.getExtraction(extractionId);
+
+      if (!extraction) {
+        throw new Error(`Extraction record ${extractionId} not found`);
+      }
 
       logger.info(`Processing extraction: ${extractionId}`);
 
       // Mark as processing
-      ExtractionService.updateExtractionStatus(extractionId, 'processing');
+      await ExtractionService.updateExtractionStatus(extractionId, 'processing');
 
       // Read file content
       tempFilePath = FileService.generateTempFilePath(extraction.fileName, extractionId);
@@ -67,14 +71,14 @@ export class CodeExtractionController {
       };
 
       // Save results to extraction record
-      ExtractionService.setExtractionResults(extractionId, results);
+      await ExtractionService.setExtractionResults(extractionId, results);
 
       logger.info(`Extraction completed: ${extractionId}`);
     } catch (error) {
       logger.error(`Extraction processing error: ${error}`);
 
       // Mark as failed
-      ExtractionService.updateExtractionStatus(
+      await ExtractionService.updateExtractionStatus(
         extractionId,
         'failed',
         error instanceof Error ? error.message : 'Unknown error'

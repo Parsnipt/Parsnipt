@@ -35,6 +35,8 @@ const getDatabaseUrl = (): string => {
   );
 };
 
+const isProd = process.env.NODE_ENV === 'production';
+
 // Create Knex instance
 const knexInstance: Knex = knex({
   client: 'postgresql',
@@ -45,13 +47,17 @@ const knexInstance: Knex = knex({
     idleTimeoutMillis: 30000,
   },
   migrations: {
-    directory: path.join(process.cwd(), 'src', 'database', 'migrations'),
-    extension: 'ts',
+    directory: isProd 
+      ? path.join(process.cwd(), 'dist', 'database', 'migrations')
+      : path.join(process.cwd(), 'src', 'database', 'migrations'),
+    extension: isProd ? 'js' : 'ts',
     loadExtensions: ['.ts', '.js'],
   },
   seeds: {
-    directory: path.join(process.cwd(), 'src', 'database', 'seeds'),
-    extension: 'ts',
+    directory: isProd 
+      ? path.join(process.cwd(), 'dist', 'database', 'seeds')
+      : path.join(process.cwd(), 'src', 'database', 'seeds'),
+    extension: isProd ? 'js' : 'ts',
     loadExtensions: ['.ts', '.js'],
   },
 });

@@ -113,7 +113,7 @@ export class CodeExtractorService {
   }
 
   /**
-   * Helper to slice the RAW original source code AND capture accurate line numbers
+   * Helper to slice the RAW original source code and capture accurate line numbers
    * This bypasses Babel's generator to prevent trailing comments from attaching
    * to the bottom of the code snippet.
    */
@@ -230,7 +230,7 @@ export class CodeExtractorService {
       const node = path.node as t.FunctionDeclaration;
       const name = node.id?.name || 'anonymous';
       
-      // Extract code AND correctly synchronized line numbers
+      // Extract code and correctly synchronized line numbers
       const extraction = this.extractRawCodeAndLines(path, context.sourceCode);
       if (!extraction) return null;
       const { code, startLine, endLine, lineCount } = extraction;

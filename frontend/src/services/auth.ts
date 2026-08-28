@@ -3,13 +3,13 @@
  * Handles all authentication API calls and token management
  */
 
-import apiClient from './api.js';
+import apiClient from './api';
 import {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
   ApiSuccessResponse,
-} from '../types/auth.js';
+} from '../types/auth';
 
 export const authService = {
   /**
@@ -39,7 +39,6 @@ export const authService = {
     } catch (error) {
       // Extract error message from API response or use generic message
       if (error instanceof Error) {
-        // Check if it's an axios error with response data
         const axiosError = error as any;
         if (axiosError.response?.data?.error?.message) {
           throw new Error(axiosError.response.data.error.message);
@@ -64,11 +63,10 @@ export const authService = {
       });
 
       if (response.data.success) {
-        // Store tokens in localStorage
+
         localStorage.setItem('accessToken', response.data.data.tokens.accessToken);
         localStorage.setItem('refreshToken', response.data.data.tokens.refreshToken);
         
-        // Return user data
         return response.data.data;
       }
 
@@ -92,14 +90,14 @@ export const authService = {
    */
   async logout(): Promise<void> {
     try {
-      const token = this.getAccessToken();
+      const token = localStorage.getItem('accessToken');
       if (token) {
         await apiClient.post('/auth/logout');
       }
     } catch (error) {
       console.warn('Logout API call failed, but clearing local tokens anyway');
     } finally {
-      // Always clear tokens locally, even if API call fails
+      // Always clears tokens locally, even if API call fails
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
     }

@@ -12,11 +12,11 @@ import logger from '../utils/logger.js';
  * Middleware to verify JWT token
  * Should be applied to protected routes
  */
-export const authMiddleware = (
+export const authMiddleware = async(
   req: Request,
   _res: Response, 
   next: NextFunction
-): void => {
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -34,7 +34,7 @@ export const authMiddleware = (
 
     // Optionally fetch full user data
     try {
-      const user = AuthService.getUser(decoded.userId);
+      const user = await AuthService.getUser(decoded.userId);      
       req.user = user;
     } catch (error) {
       logger.warn(`Could not fetch user data for ID: ${decoded.userId}`);

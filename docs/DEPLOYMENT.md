@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 18+ and npm 9+
+- Node.js 24+ and npm 9+
 - Backend API running and accessible
 - Environment variables configured
 
@@ -74,7 +74,7 @@ npm run test:e2e
 ### Run Performance Tests
 
 ```bash
-npm run test:performance
+npm run test:coverage
 ```
 
 - Bundle size analysis
@@ -101,7 +101,7 @@ npm run build
 
 Create `Dockerfile`:
 
-FROM node:18-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 

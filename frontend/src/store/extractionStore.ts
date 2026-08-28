@@ -38,7 +38,6 @@ const initialState = {
   currentExtraction: null,
   isLoading: false,
   isUploading: false,
-  uploadUploadProgress: 0,
   uploadProgress: 0,
   error: null,
 };

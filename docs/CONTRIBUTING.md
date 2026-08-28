@@ -43,7 +43,7 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/parsni
 ## Development Setup
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 24+
 - npm or yarn
 - Git
 

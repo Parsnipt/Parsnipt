@@ -4,6 +4,7 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
+    'plugin:react-hooks/recommended', // Forces editor to flag missing useEffect/useCallback dependencies
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'tailwind.config.js', 'postcss.config.js', 'playwright.config.ts'],
   parser: '@typescript-eslint/parser',

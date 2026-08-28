@@ -227,37 +227,45 @@ See [API Documentation](../docs/API.md) for complete details.
 ### Users Table
 ```sql
 CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  name VARCHAR(255),
-  tier VARCHAR(50) DEFAULT 'free',
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  tier VARCHAR(50) DEFAULT 'free',
+  is_verified BOOLEAN DEFAULT false,
+  verification_token VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
 ### Extractions Table
 ```sql
 CREATE TABLE extractions (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  file_name VARCHAR(255) NOT NULL,
-  file_size_bytes INT NOT NULL,
-  extraction_results JSONB,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  file_name VARCHAR(255) NOT NULL,
+  file_size_bytes INT NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  extraction_results JSONB,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
 ### Audit Logs Table
 ```sql
 CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  action VARCHAR(255) NOT NULL,
-  details JSONB,
-  created_at TIMESTAMP DEFAULT NOW()
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  action VARCHAR(255) NOT NULL,
+  resource_type VARCHAR(100) NOT NULL,
+  resource_id UUID,
+  ip_address VARCHAR(45),
+  user_agent VARCHAR(500),
+  details JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 

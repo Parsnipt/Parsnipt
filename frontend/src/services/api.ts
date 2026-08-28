@@ -26,9 +26,11 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    // Keeps the trigger from redirecting if the 401 came from the login route
+    if (error.response?.status === 401 && error.config?.url !== '/auth/login') {
       // Token expired - redirect to login
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       window.location.href = '/login';
     }
     return Promise.reject(error);

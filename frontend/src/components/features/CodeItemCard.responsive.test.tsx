@@ -37,10 +37,10 @@ describe('CodeItemCard Responsive Design', () => {
 
     const { container } = render(<CodeItemCard item={mockCodeItem} />);
 
-    // Check if card is visible and not cut off
-    const card = container.querySelector('.border-gray-200');
+    // Check if card is visible and not cut off using the branded classes
+    const card = container.querySelector('.border-brand-darkGreen\\/90') || container.firstElementChild;
     expect(card).toBeInTheDocument();
-    expect(card).toHaveClass('rounded-lg');
+    expect(card).toHaveClass('rounded-xl');
   });
 
   it('should render properly on tablet viewport', () => {

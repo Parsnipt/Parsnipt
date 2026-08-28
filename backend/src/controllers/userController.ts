@@ -28,7 +28,7 @@ export class UserController {
         throw new AuthenticationError('User ID not found in request');
       }
 
-      const user = AuthService.getUser(req.userId);
+      const user = await AuthService.getUser(req.userId);
 
       const response: SuccessResponse<typeof user> = {
         success: true,
@@ -57,7 +57,7 @@ export class UserController {
       }
 
       const { name, email } = req.body;
-      const user = AuthService.updateUser(req.userId, { name, email });
+      const user = await AuthService.updateUser(req.userId, { name, email });
 
       const response: SuccessResponse<typeof user> = {
         success: true,

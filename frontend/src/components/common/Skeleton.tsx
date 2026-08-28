@@ -40,13 +40,16 @@ export function SkeletonCard({ className = '' }: { className?: string }) {
 }
 
 export function SkeletonCodeBlock() {
+  // Stable, staggered widths that look natural but won't jump on re-render
+  const lineLengths = ['85%', '60%', '90%', '70%', '80%', '45%', '75%', '50%'];
+
   return (
     <div className="bg-gray-900 rounded p-4 space-y-2">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {lineLengths.map((width, i) => (
         <div
           key={i}
           className="skeleton skeleton-dark"
-          style={{ height: '20px', width: `${Math.random() * 40 + 60}%` }}
+          style={{ height: '20px', width }}
         />
       ))}
     </div>
