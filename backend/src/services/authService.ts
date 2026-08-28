@@ -42,11 +42,25 @@ export class AuthService {
     }
   }
 
-  private static validatePassword(password: string): void {
-    if (password.length < 8) throw new ValidationError('Password must be at least 8 characters long');
-    if (!/[A-Z]/.test(password)) throw new ValidationError('Password must contain at least one uppercase letter');
-    if (!/[a-z]/.test(password)) throw new ValidationError('Password must contain at least one lowercase letter');
-    if (!/[0-9]/.test(password)) throw new ValidationError('Password must contain at least one number');
+ private static validatePassword(password: string): void {
+    if (password.length < 8) {
+      throw new ValidationError('Password must be at least 8 characters long');
+    }
+    
+    // Check for at least one uppercase letter without regex
+    if (password === password.toLowerCase()) {
+      throw new ValidationError('Password must contain at least one uppercase letter');
+    }
+    
+    // Check for at least one lowercase letter without regex
+    if (password === password.toUpperCase()) {
+      throw new ValidationError('Password must contain at least one lowercase letter');
+    }
+    
+    // Check for at least one number
+    if (!/\d/.test(password)) {
+      throw new ValidationError('Password must contain at least one number');
+    }
   }
 
   private static async hashPassword(password: string): Promise<string> {
@@ -129,7 +143,7 @@ export class AuthService {
       updated_at: now,
     };
 
-    // Insert into DB. We try snake_case first, fallback to camelCase
+    // Insert into DB trying snake_case first, fallback to camelCase
     try {
       await knex('users').insert(newUser);
     } catch (e) {

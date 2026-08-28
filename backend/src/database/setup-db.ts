@@ -3,8 +3,8 @@
  * Creates database and runs migrations
  */
 
-import knex from '../src/config/database.js';
-import logger from '../src/utils/logger.js';
+import knex from '../config/database.js';
+import logger from '../utils/logger.js';
 
 async function setupDatabase() {
   try {
