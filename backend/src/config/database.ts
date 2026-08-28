@@ -3,16 +3,13 @@
  * Uses Knex for query building and migrations
  */
 
-// Import the default export for Node.js, and the types for TypeScript
 import knexSetup from 'knex';
 import type { Knex } from 'knex';
 import path from 'path';
 import logger from '../utils/logger.js';
 
-// Force TypeScript to understand that this is a callable function
 const knex = knexSetup as unknown as (config: Knex.Config) => Knex;
 
-// Get database URL from environment
 const getDatabaseUrl = (): string => {
   const env = process.env.NODE_ENV || 'development';
 
@@ -28,7 +25,6 @@ const getDatabaseUrl = (): string => {
     return url;
   }
 
-  // Development
   return (
     process.env.DATABASE_URL ||
     'postgresql://postgres:password@localhost:5432/parsnipt_dev'
@@ -37,7 +33,6 @@ const getDatabaseUrl = (): string => {
 
 const isProd = process.env.NODE_ENV === 'production';
 
-// Create Knex instance
 const knexInstance: Knex = knex({
   client: 'postgresql',
   connection: getDatabaseUrl(),
@@ -62,7 +57,6 @@ const knexInstance: Knex = knex({
   },
 });
 
-// Test connection
 knexInstance
   .raw('SELECT 1')
   .then(() => {
@@ -72,7 +66,6 @@ knexInstance
     logger.error(`✗ Database connection failed: ${error.message}`);
   });
 
-// Handle connection errors
 knexInstance.on('error', (error: any) => {
   logger.error(`Database error: ${error.message}`);
 });
