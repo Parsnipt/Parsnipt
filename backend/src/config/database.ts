@@ -3,7 +3,7 @@
  * Uses Knex for query building and migrations
  */
 
-import knexSetup from 'knex';
+import pkg from 'knex';
 import path from 'path';
 import logger from '../utils/logger.js';
 
@@ -32,8 +32,8 @@ const getDatabaseUrl = (): string => {
 
 const isProd = process.env.NODE_ENV === 'production';
 
-// Create Knex instance (casting to any avoids strict NodeNext commonjs type collisions)
-const knexInstance = (knexSetup as any)({
+// Create Knex instance using default interop for CommonJS compatibility in NodeNext
+const knexInstance = (pkg as any)({
   client: 'postgresql',
   connection: getDatabaseUrl(),
   pool: {
