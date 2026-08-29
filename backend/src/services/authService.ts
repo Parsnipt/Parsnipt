@@ -19,6 +19,7 @@ import {
   AuthenticationError,
   NotFoundError,
 } from '../utils/errors.js';
+import EmailService from './emailService.js';
 import logger from '../utils/logger.js';
 
 // Helper to map DB row to TypeScript object safely
@@ -154,14 +155,8 @@ export class AuthService {
 
     logger.info(`User registered: ${email}`);
 
-    // TODO: Connect this to Resend in Phase 2
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    console.log('\n======================================================');
-    console.log(`📩 MOCK EMAIL SENT TO: ${email}`);
-    console.log(`Subject: Verify your Parsnipt Account`);
-    console.log(`Body: Click here to verify your account:`);
-    console.log(`${frontendUrl}/verify?token=${verificationToken}`);
-    console.log('======================================================\n');
+    // Send verification email
+    await EmailService.sendVerificationEmail(email, verificationToken);
 
     const tokens = this.generateTokens(userId, email);
     
