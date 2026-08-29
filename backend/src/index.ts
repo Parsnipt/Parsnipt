@@ -3,12 +3,24 @@
  * Starts the Express server
  */
 
+import fs from 'fs';
+import path from 'path';
 import createApp from './app.js';
 import config from './config/env.js';
 import logger from './utils/logger.js';
 import FileService from './services/fileService.js';
 
 const app = createApp();
+
+// Health check / root route
+app.get('/', (_req, res) => {
+  res.json({
+    status: 'online',
+    service: 'parsnipt-backend',
+    environment: config.nodeEnv,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 let cleanupInterval: NodeJS.Timeout;
 
@@ -17,6 +29,12 @@ const server = app.listen(config.port, () => {
   logger.info(`Environment: ${config.nodeEnv}`);
   logger.info(`Log Level: ${config.logLevel}`);
   
+  // Ensure temp upload directory exists before running cleanup
+  const tempUploadsDir = path.join(process.cwd(), 'uploads', 'temp');
+  if (!fs.existsSync(tempUploadsDir)) {
+    fs.mkdirSync(tempUploadsDir, { recursive: true });
+  }
+
   // Clears any files left behind from previous sessions or crashes
   logger.info('🧹 Running initial temporary file cleanup...');  
   FileService.cleanupOldFiles().catch((err: any) => logger.error('Initial cleanup failed:', err));
