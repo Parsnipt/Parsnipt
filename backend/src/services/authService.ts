@@ -155,11 +155,12 @@ export class AuthService {
     logger.info(`User registered: ${email}`);
 
     // TODO: Connect this to Resend in Phase 2
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     console.log('\n======================================================');
     console.log(`📩 MOCK EMAIL SENT TO: ${email}`);
     console.log(`Subject: Verify your Parsnipt Account`);
     console.log(`Body: Click here to verify your account:`);
-    console.log(`http://localhost:3000/verify?token=${verificationToken}`);
+    console.log(`${frontendUrl}/verify?token=${verificationToken}`);
     console.log('======================================================\n');
 
     const tokens = this.generateTokens(userId, email);
