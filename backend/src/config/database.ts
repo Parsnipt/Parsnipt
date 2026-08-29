@@ -3,11 +3,15 @@
  * Uses Knex for query building and migrations
  */
 
-import pkg from 'knex';
+import * as knexPkg from 'knex';
+import type { Knex } from 'knex';
 import path from 'path';
 import logger from '../utils/logger.js';
 
-// Get database URL from environment
+// Explicitly type-cast the imported package to the Knex factory function signature
+const createKnex = (knexPkg as unknown as { default: (config: Knex.Config) => Knex }).default 
+  || (knexPkg as unknown as (config: Knex.Config) => Knex);
+
 const getDatabaseUrl = (): string => {
   const env = process.env.NODE_ENV || 'development';
 
@@ -23,7 +27,6 @@ const getDatabaseUrl = (): string => {
     return url;
   }
 
-  // Development
   return (
     process.env.DATABASE_URL ||
     'postgresql://postgres:password@localhost:5432/parsnipt_dev'
@@ -32,8 +35,7 @@ const getDatabaseUrl = (): string => {
 
 const isProd = process.env.NODE_ENV === 'production';
 
-// Create Knex instance using default interop for CommonJS compatibility in NodeNext
-const knexInstance = (pkg as any)({
+const knexInstance: Knex = createKnex({
   client: 'postgresql',
   connection: getDatabaseUrl(),
   pool: {
@@ -57,7 +59,6 @@ const knexInstance = (pkg as any)({
   },
 });
 
-// Test connection
 knexInstance
   .raw('SELECT 1')
   .then(() => {
@@ -67,7 +68,6 @@ knexInstance
     logger.error(`✗ Database connection failed: ${error.message}`);
   });
 
-// Handle connection errors
 knexInstance.on('error', (error: any) => {
   logger.error(`Database error: ${error.message}`);
 });

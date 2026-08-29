@@ -2,7 +2,7 @@
  * Development seed data
  */
 
-import { Knex } from 'knex';
+import type { Knex } from 'knex';
 import bcryptjs from 'bcryptjs';
 
 export async function seed(knex: Knex): Promise<void> {
