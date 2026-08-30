@@ -9,6 +9,8 @@ export class EmailService {
     const frontendUrl = process.env.FRONTEND_URL || 'https://www.parsnipt.dev';
     const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
 
+    logger.info(`Constructed verification link: ${verificationLink}`);
+
     // If API key is missing during local dev fallback, log a warning
     if (!resendApiKey) {
       logger.warn('RESEND_API_KEY is missing. Falling back to mock email log.');
