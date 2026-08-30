@@ -88,10 +88,8 @@ export class AuthService {
    * Verify Email Token
    */
   static async verifyEmail(token: string): Promise<void> {
-    // Check both potential column names just to be safe
     const dbUser = await knex('users')
       .where('verification_token', token)
-      .orWhere('verificationToken', token)
       .first();
     
     if (!dbUser) {
@@ -100,18 +98,8 @@ export class AuthService {
 
     await knex('users').where({ id: dbUser.id }).update({
       is_verified: true,
-      isVerified: true, // Write both to support either migration style
       verification_token: null,
-      verificationToken: null,
-      updated_at: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }).catch(() => {
-      // Fallback if writing both column styles throws a constraint error
-      return knex('users').where({ id: dbUser.id }).update({
-        is_verified: true,
-        verification_token: null,
-        updated_at: new Date().toISOString()
-      });
+      updated_at: new Date().toISOString()
     });
     
     logger.info(`User email verified: ${dbUser.email}`);
