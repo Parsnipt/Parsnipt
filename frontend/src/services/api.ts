@@ -6,7 +6,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: 'https://parsnipt-api.onrender.com/api/v1',
+  baseURL: 'https://parsnipt-api.onrender.com',
   timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
   headers: {
     'Content-Type': 'application/json',
