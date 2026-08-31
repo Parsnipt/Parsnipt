@@ -5,11 +5,9 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-// Fallback to relative '/api/v1' locally, or use the absolute Render URL in production
-const apiBaseUrl = import.meta.env.VITE_API_URL || '';
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: apiBaseUrl ? `${apiBaseUrl}/api/v1` : '/api/v1',
+  baseURL: 'https://parsnipt-api.onrender.com/api/v1',
   timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
   headers: {
     'Content-Type': 'application/json',
