@@ -20,7 +20,7 @@ export const authService = {
     try {
       const response = await apiClient.post<
         ApiSuccessResponse<AuthResponse>
-      >('/auth/register', {
+      >('auth/register', {
         email: data.email,
         password: data.password,
         name: data.name,
@@ -57,7 +57,7 @@ export const authService = {
     try {
       const response = await apiClient.post<
         ApiSuccessResponse<AuthResponse>
-      >('/auth/login', {
+      >('auth/login', {
         email: data.email,
         password: data.password,
       });
@@ -92,7 +92,7 @@ export const authService = {
     try {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        await apiClient.post('/auth/logout');
+        await apiClient.post('auth/logout');
       }
     } catch (error) {
       console.warn('Logout API call failed, but clearing local tokens anyway');
@@ -116,7 +116,7 @@ export const authService = {
 
       const response = await apiClient.post<
         ApiSuccessResponse<{ accessToken: string; expiresIn: number }>
-      >('/auth/refresh', {
+      >('auth/refresh', {
         refreshToken,
       });
 

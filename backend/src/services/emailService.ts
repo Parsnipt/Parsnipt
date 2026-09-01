@@ -5,9 +5,9 @@ const resendApiKey = process.env.RESEND_API_KEY;
 const resend = new Resend(resendApiKey);
 
 export class EmailService {
-  static async sendVerificationEmail(email: string, verificationToken: string): Promise<void> {
+  static async sendVerificationEmail(email: string, verification_token: string): Promise<void> {
     const frontendUrl = process.env.FRONTEND_URL || 'https://www.parsnipt.dev';
-    const verificationLink = `${frontendUrl}/verify?token=${verificationToken}`;
+    const verificationLink = `${frontendUrl}/verify?token=${verification_token}`;
 
     // If API key is missing during local dev fallback, log a warning
     if (!resendApiKey) {
