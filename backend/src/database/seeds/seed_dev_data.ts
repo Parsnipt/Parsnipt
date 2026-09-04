@@ -21,16 +21,14 @@ export async function seed(knex: Knex): Promise<void> {
       email: 'dev@example.com',
       password_hash: passwordHash,
       name: 'Development User',
-      tier: 'pro',
-      is_verified: true, // Unlocks account for local dev
+      tier: 'pro',      
     },
     {
       id: '00000000-0000-0000-0000-000000000002',
       email: 'free@example.com',
       password_hash: passwordHash,
       name: 'Free Tier User',
-      tier: 'free',
-      is_verified: true,
+      tier: 'free',      
     },
     {
       id: '00000000-0000-0000-0000-000000000003',
@@ -38,7 +36,6 @@ export async function seed(knex: Knex): Promise<void> {
       password_hash: passwordHash,
       name: 'Enterprise User',
       tier: 'enterprise',
-      is_verified: true,
     },
   ]);
 
