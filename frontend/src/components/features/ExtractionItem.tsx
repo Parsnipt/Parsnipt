@@ -7,10 +7,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExtractionStore } from '../../store/extractionStore';
 import extractionService from '../../services/extractions';
-import { Extraction } from '../../types/extraction';
+import { DbExtraction } from '../../types/extraction';
 
 interface ExtractionItemProps {
-  extraction: Extraction;
+  extraction: DbExtraction;
 }
 
 export default function ExtractionItem({ extraction }: ExtractionItemProps) {
@@ -34,41 +34,10 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
   };
 
   /**
-   * Format file size for display
-   */
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  /**
-   * Get status badge styling
-   */
-  const getStatusBadge = (): { bg: string; text: string; icon: string } => {
-    switch (extraction.status) {
-      case 'completed':
-        return { bg: 'bg-green-100', text: 'text-green-800', icon: '✓' };
-      case 'processing':
-        return { bg: 'bg-blue-100', text: 'text-blue-800', icon: '⟳' };
-      case 'pending':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⏱' };
-      case 'failed':
-        return { bg: 'bg-red-100', text: 'text-red-800', icon: '✕' };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-800', icon: '?' };
-    }
-  };
-
-  /**
    * Handle view extraction details
    */
   const handleView = () => {
-    if (extraction.status === 'completed') {
-      navigate(`/results/${extraction.id}`);
-    }
+     navigate(`/results/${extraction.id}`);
   };
 
   /**
@@ -88,11 +57,6 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
     }
   };
 
-  const statusBadge = getStatusBadge();
-  const itemCount = extraction.extractionResults
-    ? extraction.extractionResults.summary.totalItems
-    : 0;
-
   return (
     <div className="bg-white border-2 border-brand-brown/30 rounded-2xl p-6 hover:shadow-md transition-shadow">
       {/* Confirm delete modal */}
@@ -100,10 +64,10 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl border-2 border-brand-brown/80 p-8 max-w-sm mx-4 shadow-2xl">
             <h3 className="text-xl font-bold text-brand-darkGreen/90 mb-2">
-              Delete Extraction?
+              Delete Artifact?
             </h3>
             <p className="text-brand-brown/80 mb-8 font-medium">
-              Are you sure you want to delete this extraction? This action cannot be undone.
+              Are you sure you want to delete this extraction record? This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -140,66 +104,39 @@ export default function ExtractionItem({ extraction }: ExtractionItemProps) {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
               />
             </svg>
 
-            {/* File name */}
-            <h3 className="text-lg font-bold text-brand-darkGreen/90">{extraction.fileName}</h3>
+            {/* Artifact Name */}
+            <h3 className="text-lg font-bold text-brand-darkGreen/90 truncate max-w-sm">{extraction.name}</h3>
 
-            {/* Status badge */}
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${statusBadge.bg} ${statusBadge.text} flex items-center gap-1 border border-white`}
-            >
-              <span>{statusBadge.icon}</span>
-              {extraction.status.charAt(0).toUpperCase() + extraction.status.slice(1)}
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 flex items-center gap-1 border border-white">
+              {extraction.kind.replace('-', ' ')}
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 flex items-center gap-1 border border-white">
+               {extraction.role}
             </span>
           </div>
 
-          {/* File metadata */}
-          <div className="flex flex-wrap gap-4 text-sm text-brand-brown/80 font-medium ml-8">
-            <span>{formatFileSize(extraction.fileSizeBytes)}</span>
+          {/* Metadata */}
+          <div className="flex flex-wrap gap-4 text-sm text-brand-brown/80 font-medium ml-8 mt-2">
+            <span>{formatDate(extraction.created_at)}</span>
             <span className="text-brand-brown/40">•</span>
-            <span>{formatDate(extraction.createdAt)}</span>
-            {extraction.status === 'completed' && itemCount > 0 && (
-              <>
-                <span className="text-brand-brown/40">•</span>
-                <span className="font-bold">{itemCount} item{itemCount !== 1 ? 's' : ''} extracted</span>
-              </>
-            )}
+            <span className="font-mono text-xs">{extraction.fingerprint.slice(0, 16)}...</span>
           </div>
 
-          {/* Error message if failed */}
-          {extraction.status === 'failed' && extraction.error && (
-            <p className="mt-2 text-sm font-bold text-red-600 ml-8">
-              Error: {extraction.error}
-            </p>
-          )}
-
-          {/* Processing time if completed */}
-          {extraction.status === 'completed' && extraction.extractionResults && (
-            <p className="mt-2 text-xs text-brand-brown/60 ml-8">
-              Processed in {extraction.extractionResults.summary.processingTimeMs}ms
-            </p>
-          )}
         </div>
 
         {/* Right section - actions */}
         <div className="flex gap-2 ml-4">
-          {/* View button */}
           <button
             onClick={handleView}
-            disabled={extraction.status !== 'completed'}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${
-              extraction.status === 'completed'
-                ? 'btn-primary'
-                : 'bg-brand-cream/50 text-brand-brown/50 cursor-not-allowed border-2 border-transparent'
-            }`}
+            className="px-4 py-2 rounded-lg font-bold transition-colors btn-primary"
           >
-            {extraction.status === 'completed' ? 'View' : 'Processing'}
+            View
           </button>
 
-          {/* Delete button */}
           <button
             onClick={() => setShowConfirm(true)}
             disabled={isDeleting}

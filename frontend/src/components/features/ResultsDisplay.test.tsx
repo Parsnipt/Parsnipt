@@ -1,69 +1,80 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import ResultsDisplay from './ResultsDisplay';
-import { Extraction, ExtractionResults } from '../../types/extraction';
+import ResultsDisplay, { ExtractionProcessState } from './ResultsDisplay';
+import { FileAnalysis } from '../../types/extraction';
 
 afterEach(cleanup);
 
 describe('ResultsDisplay', () => {
-  const mockResults: ExtractionResults = {
-    functions: [
+  const mockAnalysis: FileAnalysis = {
+    schemaVersion: '1.5.0',
+    generator: { name: 'Parsnipt', version: '1.5.0' },
+    source: {
+      fileName: 'test.js',
+      language: 'javascript',
+      lineCount: 10,
+      characterCount: 200
+    },
+    processingTime: {
+      parsingMs: 10,
+      extractionMs: 20,
+      analysisMs: 20,
+      totalMs: 50
+    },
+    timestamp: new Date().toISOString(),
+    summary: {
+      totalArtifacts: 2,
+      byKind: { function: 1, component: 1 },
+      byRole: { utility: 1, rendering: 1 },
+      overallConfidence: 0.95,
+      documentationCoverage: 0.5
+    },
+    artifacts: [
       {
         id: '1',
         name: 'testFunc',
-        type: 'function',
+        kind: 'function',
+        role: 'utility',
         code: 'function testFunc() {}',
-        startLine: 1,
-        endLine: 2,
-        lineCount: 2,
-        complexity: 'simple',
-        confidence: 0.95,
-        metadata: {
-          parameters: [],
-          returnType: 'void',
-          isAsync: false,
-          isArrow: false,
-          isExported: false,
-        },
+        fingerprint: 'hash1',
+        source: { startLine: 1, endLine: 2 },
+        parent: null,
+        scopeDepth: 0,
+        syntax: { isAsync: false, isGenerator: false, isArrow: false, visibility: 'public', exportType: 'none' },
+        parameters: [],
+        returns: { present: true, count: 1, expressions: ['void'], isAsync: false, isGenerator: false },
+        documentation: { leading: [], inline: [], trailing: [] },
+        analysis: { complexity: 'low', cyclomaticComplexity: 1, nestingDepth: 1, branchCount: 0, loopCount: 0, callCount: 0, documentationCoverage: 0 },
+        relationships: { calls: [], calledBy: [], references: [], referencedBy: [], imports: [], exports: [], children: [] },
+        confidence: { overall: 0.95, classification: 1, location: 1, parameters: 1, returns: 1, analysis: 1 }
       },
-    ],
-    components: [
       {
         id: '2',
         name: 'TestComponent',
-        type: 'component',
+        kind: 'component',
+        role: 'rendering',
         code: 'function TestComponent() { return <div>Test</div>; }',
-        startLine: 4,
-        endLine: 6,
-        lineCount: 3,
-        complexity: 'simple',
-        confidence: 0.95,
-        metadata: {
-          parameters: [],
-          isAsync: false,
-          isArrow: false,
-          isExported: false,
-        },
-      },
-    ],
-    utilities: [],
-    constants: [],
-    summary: {
-      totalItems: 2,
-      processingTimeMs: 150,
-    },
+        fingerprint: 'hash2',
+        source: { startLine: 4, endLine: 6 },
+        parent: null,
+        scopeDepth: 0,
+        syntax: { isAsync: false, isGenerator: false, isArrow: false, visibility: 'public', exportType: 'none' },
+        parameters: [],
+        returns: { present: true, count: 1, expressions: ['JSX'], isAsync: false, isGenerator: false },
+        documentation: { leading: [], inline: [], trailing: [] },
+        analysis: { complexity: 'low', cyclomaticComplexity: 1, nestingDepth: 1, branchCount: 0, loopCount: 0, callCount: 0, documentationCoverage: 0 },
+        relationships: { calls: [], calledBy: [], references: [], referencedBy: [], imports: [], exports: [], children: [] },
+        confidence: { overall: 0.95, classification: 1, location: 1, parameters: 1, returns: 1, analysis: 1 }
+      }
+    ]
   };
 
-  const mockExtraction: Extraction = {
-    id: '123',
-    userId: 'user-123',
-    fileName: 'test.js',
-    fileSizeBytes: 1024,
+  const mockExtraction: ExtractionProcessState = {
     status: 'completed',
-    extractionResults: mockResults,
+    fileName: 'test.js',
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    fileAnalysis: mockAnalysis,
   };
 
   it('should render results display with summary', () => {
@@ -74,18 +85,18 @@ describe('ResultsDisplay', () => {
   });
 
   it('should show processing state', () => {
-    const processingExtraction: Extraction = {
+    const processingExtraction: ExtractionProcessState = {
       ...mockExtraction,
       status: 'processing',
     };
 
     render(<ResultsDisplay extraction={processingExtraction} />);
 
-    expect(screen.getByText(/Processing your code/i)).toBeInTheDocument();
+    expect(screen.getByText(/Analyzing codebase structure/i)).toBeInTheDocument();
   });
 
   it('should show error state', () => {
-    const failedExtraction: Extraction = {
+    const failedExtraction: ExtractionProcessState = {
       ...mockExtraction,
       status: 'failed',
       error: 'Syntax error in code',
@@ -93,14 +104,14 @@ describe('ResultsDisplay', () => {
 
     render(<ResultsDisplay extraction={failedExtraction} />);
 
-    expect(screen.getByText(/Extraction Failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Analysis Failed/i)).toBeInTheDocument();
     expect(screen.getByText(/Syntax error/)).toBeInTheDocument();
   });
 
   it('should filter results by type', () => {
     render(<ResultsDisplay extraction={mockExtraction} />);
 
-    const functionFilter = screen.getByRole('button', { name: /Functions/ });
+    const functionFilter = screen.getByRole('button', { name: /Functions & Methods/ });
     fireEvent.click(functionFilter);
 
     expect(screen.getByText('testFunc')).toBeInTheDocument();
@@ -122,13 +133,14 @@ describe('ResultsDisplay', () => {
     const searchInput = screen.getByPlaceholderText(/Search/);
     fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
 
-    expect(screen.getByText(/No items found/i)).toBeInTheDocument();
+    expect(screen.getByText(/No artifacts found/i)).toBeInTheDocument();
   });
 
   it('should display summary statistics', () => {
     render(<ResultsDisplay extraction={mockExtraction} />);
 
-    const statElements = screen.getAllByText('1');
-    expect(statElements[0]).toBeInTheDocument();
+    // Total artifacts is 2, functions is 1, components is 1
+    const statElements = screen.getAllByText('2');
+    expect(statElements.length).toBeGreaterThan(0);
   });
 });

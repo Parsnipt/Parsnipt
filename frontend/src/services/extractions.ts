@@ -6,10 +6,17 @@
 import { AxiosProgressEvent } from 'axios';
 import apiClient from './api';
 import {
-  Extraction,
+  DbExtraction,
   ExtractionListResponse,
-  ExtractionDetailResponse,
+  ExtractionUploadResponse,
+  FileAnalysis
 } from '../types/extraction';
+
+export interface ExtractionDetailResponse {
+  success: boolean;
+  data: DbExtraction;
+  timestamp?: string;
+}
 
 export const extractionService = {
   /**
@@ -19,13 +26,12 @@ export const extractionService = {
   async uploadFile(
     file: File,
     onUploadProgress?: (progressEvent: AxiosProgressEvent) => void
-  ): Promise<Extraction> {
+  ): Promise<FileAnalysis> {
     try {
-      // Create FormData for multipart file upload
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await apiClient.post<{ success: boolean; data: Extraction }>(
+      const response = await apiClient.post<ExtractionUploadResponse>(
         '/extractions',
         formData,
         {
@@ -37,12 +43,11 @@ export const extractionService = {
       );
 
       if (response.data.success) {
-        return response.data.data;
+        return response.data.data; 
       }
 
       throw new Error('Upload response was not successful');
     } catch (error) {
-      // Extract error message from API response or use generic message
       if (error instanceof Error) {
         const axiosError = error as any;
         if (axiosError.response?.data?.error?.message) {
@@ -58,7 +63,7 @@ export const extractionService = {
    * Get all extractions for the current user
    * GET /api/v1/extractions
    */
-  async getExtractions(): Promise<Extraction[]> {
+  async getExtractions(): Promise<DbExtraction[]> {
     try {
       const response = await apiClient.get<ExtractionListResponse>('/extractions');
 
@@ -83,7 +88,7 @@ export const extractionService = {
    * Get a specific extraction by ID
    * GET /api/v1/extractions/:id
    */
-  async getExtraction(extractionId: string): Promise<Extraction> {
+  async getExtraction(extractionId: string): Promise<DbExtraction> {
     try {
       const response = await apiClient.get<ExtractionDetailResponse>(
         `/extractions/${extractionId}`
@@ -130,30 +135,13 @@ export const extractionService = {
   },
 
   /**
-   * Poll an extraction to check its status
-   * GET /api/v1/extractions/:id
+   * Poll an extraction to check its status (Legacy fallback)
    */
   async pollExtractionStatus(
     extractionId: string,
-    maxAttempts: number = 30,
-    intervalMs: number = 1000
-  ): Promise<Extraction> {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const extraction = await this.getExtraction(extractionId);
-
-      // If processing is complete, return
-      if (extraction.status === 'completed' || extraction.status === 'failed') {
-        return extraction;
-      }
-
-      // Wait before next attempt
-      if (attempt < maxAttempts - 1) {
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-      }
-    }
-
-    throw new Error('Extraction processing timed out');
-  },
+  ): Promise<DbExtraction> {    
+    return this.getExtraction(extractionId);
+  }
 };
 
 export default extractionService;

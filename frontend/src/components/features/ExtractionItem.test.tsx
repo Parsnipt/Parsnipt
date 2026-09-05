@@ -7,75 +7,51 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ExtractionItem from './ExtractionItem';
-import { Extraction } from '../../types/extraction';
+import { DbExtraction } from '../../types/extraction';
 
 afterEach(cleanup);
 
 describe('ExtractionItem', () => {
-  const mockExtraction: Extraction = {
+  const mockExtraction: DbExtraction = {
     id: '123',
-    userId: 'user-123',
-    fileName: 'test.js',
-    fileSizeBytes: 1024,
-    status: 'completed',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    extractionResults: {
-      functions: [],
-      components: [],
-      utilities: [],
-      constants: [],
-      summary: {
-        totalItems: 5,
-        processingTimeMs: 150,
-      },
-    },
+    user_id: 'user-123',
+    name: 'TestComponent',
+    code: 'const TestComponent = () => <div>Hello</div>;',
+    kind: 'component',
+    role: 'rendering',
+    fingerprint: 'abcdef1234567890abcdef',
+    created_at: new Date().toISOString(),
   };
 
   const renderWithRouter = (component: React.ReactElement) => {
     return render(<BrowserRouter>{component}</BrowserRouter>);
   };
 
-  it('should render extraction item with file name', () => {
+  it('should render extraction item with artifact name', () => {
     renderWithRouter(<ExtractionItem extraction={mockExtraction} />);
 
-    expect(screen.getByText('test.js')).toBeInTheDocument();
+    expect(screen.getByText('TestComponent')).toBeInTheDocument();
   });
 
-  it('should show completed status badge', () => {
+  it('should show kind and role badges', () => {
     renderWithRouter(<ExtractionItem extraction={mockExtraction} />);
 
-    expect(screen.getByText(/completed/i)).toBeInTheDocument();
+    expect(screen.getByText('component')).toBeInTheDocument();
+    expect(screen.getByText('rendering')).toBeInTheDocument();
   });
 
-  it('should show item count for completed extractions', () => {
+  it('should show partial fingerprint', () => {
     renderWithRouter(<ExtractionItem extraction={mockExtraction} />);
 
-    expect(screen.getByText(/5 items extracted/i)).toBeInTheDocument();
+    expect(screen.getByText(/abcdef1234567890/)).toBeInTheDocument();
   });
 
-  it('should show processing status for processing extraction', () => {
-    const processingExtraction: Extraction = {
-      ...mockExtraction,
-      status: 'processing',
-    };
-
-    renderWithRouter(<ExtractionItem extraction={processingExtraction} />);
+  it('should have an enabled View button', () => {
+    renderWithRouter(<ExtractionItem extraction={mockExtraction} />);
     
-    const processingElements = screen.getAllByText(/processing/i);
-    expect(processingElements.length).toBeGreaterThan(0);
-  });
-
-  it('should disable view button for non-completed extractions', () => {
-    const processingExtraction: Extraction = {
-      ...mockExtraction,
-      status: 'processing',
-    };
-
-    renderWithRouter(<ExtractionItem extraction={processingExtraction} />);
-
-    const viewButton = screen.getByRole('button', { name: /processing/i });
-    expect(viewButton).toBeDisabled();
+    const viewButton = screen.getByRole('button', { name: /view/i });
+    expect(viewButton).toBeInTheDocument();
+    expect(viewButton).not.toBeDisabled();
   });
 
   it('should show delete confirmation dialog when delete clicked', () => {
@@ -84,6 +60,6 @@ describe('ExtractionItem', () => {
     const deleteButton = screen.getByRole('button', { name: /delete/i });
     fireEvent.click(deleteButton);
 
-    expect(screen.getByText(/delete extraction/i)).toBeInTheDocument();
+    expect(screen.getByText(/delete artifact/i)).toBeInTheDocument();
   });
 });

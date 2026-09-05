@@ -1,98 +1,81 @@
+/**
+ * CodeItemCard tests
+ */
+
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import CodeItemCard from './CodeItemCard';
-import { CodeItem } from '../../types/extraction';
-
-Object.assign(navigator, {
-  clipboard: {
-    writeText: vi.fn().mockImplementation(() => Promise.resolve()),
-  },
-});
+import { Artifact } from '../../types/extraction';
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
 
+// Mock clipboard for the copy button
+Object.assign(navigator, {
+  clipboard: {
+    writeText: vi.fn().mockImplementation(() => Promise.resolve()),
+  },
+});
+
 describe('CodeItemCard', () => {
-  const mockCodeItem: CodeItem = {
+  const mockArtifact: Artifact = {
     id: '1',
-    name: 'greet',
-    type: 'function',
-    code: 'function greet(name) { return `Hello, ${name}`; }',
-    startLine: 1,
-    endLine: 3,
-    lineCount: 3,
-    complexity: 'simple',
-    confidence: 0.95,
-    metadata: {
-      parameters: [{ name: 'name', type: 'string', hasDefault: false }],
-      returnType: 'string',
-      isAsync: false,
-      isArrow: false,
-      isExported: false,
+    name: 'calculateTotal',
+    kind: 'function',
+    role: 'data-processing',
+    code: 'function calculateTotal(a, b) { return a + b; }',
+    fingerprint: 'hash1',
+    source: { startLine: 1, endLine: 3 },
+    parent: null,
+    scopeDepth: 0,
+    syntax: { isAsync: false, isGenerator: false, isArrow: false, visibility: 'public', exportType: 'none' },
+    parameters: [
+      { name: 'a', type: 'number', hasDefault: false },
+      { name: 'b', type: 'number', hasDefault: false }
+    ],
+    returns: { present: true, count: 1, expressions: ['a + b'], isAsync: false, isGenerator: false },
+    documentation: {
+      leading: [],
+      inline: [],
+      trailing: [],
+      jsdoc: { description: 'Adds two numbers together.', tags: [] }
     },
+    analysis: { complexity: 'low', cyclomaticComplexity: 1, nestingDepth: 1, branchCount: 0, loopCount: 0, callCount: 0, documentationCoverage: 1 },
+    relationships: { calls: [], calledBy: [], references: [], referencedBy: [], imports: [], exports: [], children: [] },
+    confidence: { overall: 0.99, classification: 1, location: 1, parameters: 1, returns: 1, analysis: 1 }
   };
 
-  it('should render code item card', () => {
-    render(<CodeItemCard item={mockCodeItem} />);
-
-    expect(screen.getByText('greet')).toBeInTheDocument();
+  it('renders collapsed state correctly with badges', () => {
+    render(<CodeItemCard item={mockArtifact} />);
+    expect(screen.getByText('calculateTotal')).toBeInTheDocument();
     expect(screen.getByText(/Function/i)).toBeInTheDocument();
+    expect(screen.getByText(/Data Processing/i)).toBeInTheDocument();
   });
 
-  it('should show metadata on card', () => {
-    render(<CodeItemCard item={mockCodeItem} />);
-
-    expect(document.body.textContent).toContain('Lines:1-3');
-    expect(document.body.textContent).toContain('Complexity:Simple');
-    expect(document.body.textContent).toContain('Parameters:1');
-  });
-
-  it('should expand and show full code', () => {
-    render(<CodeItemCard item={mockCodeItem} />);
-
-    const expandButton = screen.getByRole('button');
-    fireEvent.click(expandButton);
-
-    const codeHeaders = screen.getAllByText(/Code/);
-    expect(codeHeaders.length).toBeGreaterThan(0);
+  it('expands to show detailed AST analysis when clicked', () => {
+    render(<CodeItemCard item={mockArtifact} />);
     
-    const parameterHeaders = screen.getAllByText(/Parameters/);
-    expect(parameterHeaders.length).toBeGreaterThan(0);
-  });
-
-  it('should copy code to clipboard when button is clicked', async () => {
-    render(<CodeItemCard item={mockCodeItem} />);
-
-    const expandButton = screen.getByRole('button');
-    fireEvent.click(expandButton);
-
-    const copyButtons = screen.getAllByRole('button', { name: /Copy/i });
-    fireEvent.click(copyButtons[0]);
-
-    const copiedText = await screen.findAllByText(/Copied!/);
-    expect(copiedText[0]).toBeInTheDocument();
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(mockCodeItem.code);
-  });
-
-  it('should show complexity badge with correct styling', () => {
-    render(<CodeItemCard item={mockCodeItem} />);
-
-    expect(screen.getByText(/Simple/i)).toBeInTheDocument();
-  });
-
-  it('should display parameters in expanded view', () => {
-    render(<CodeItemCard item={mockCodeItem} />);
-
-    const expandButton = screen.getByRole('button');
-    fireEvent.click(expandButton);
-
-    const nameElements = screen.getAllByText('name');
-    expect(nameElements[0]).toBeInTheDocument();
+    const button = screen.getByRole('button', { expanded: false });
+    fireEvent.click(button);
     
-    const stringElements = screen.getAllByText('string');
-    expect(stringElements[0]).toBeInTheDocument();
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
+    expect(screen.getByText('Parameters')).toBeInTheDocument();
+    expect(screen.getByText('Source Code')).toBeInTheDocument();
+  });
+
+  it('copies code to clipboard', async () => {
+    render(<CodeItemCard item={mockArtifact} />);
+    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    
+    const copyButton = screen.getByText('📋 Copy');
+    fireEvent.click(copyButton);
+    
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(mockArtifact.code);
+    
+    // FIX: Using findByText handles the asynchronous state update!
+    expect(await screen.findByText('✓ Copied!')).toBeInTheDocument();
   });
 });

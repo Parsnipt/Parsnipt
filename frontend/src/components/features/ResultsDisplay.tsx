@@ -4,15 +4,24 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Extraction, CodeItem } from '../../types/extraction';
+import { FileAnalysis, Artifact } from '../../types/extraction';
 import ResultsSummary from './ResultsSummary';
 import ResultsFilter from './ResultsFilter';
 import CodeItemCard from './CodeItemCard';
 
-type FilterType = 'all' | 'functions' | 'components' | 'utilities' | 'constants';
+export type FilterType = 'all' | 'functions' | 'components' | 'classes' | 'other';
+
+// Local UI state interface to manage the upload process
+export interface ExtractionProcessState {
+  status: 'idle' | 'processing' | 'completed' | 'failed';
+  fileName: string;
+  createdAt: string;
+  error?: string;
+  fileAnalysis?: FileAnalysis;
+}
 
 interface ResultsDisplayProps {
-  extraction: Extraction;
+  extraction: ExtractionProcessState;
 }
 
 export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
@@ -20,17 +29,20 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredResults = useMemo(() => {
-    if (!extraction.extractionResults) return [];
+    if (!extraction.fileAnalysis) return [];
 
-    let items: CodeItem[] = [
-      ...extraction.extractionResults.functions,
-      ...extraction.extractionResults.components,
-      ...extraction.extractionResults.utilities,
-      ...extraction.extractionResults.constants,
-    ];
+    let items: Artifact[] = [...extraction.fileAnalysis.artifacts];
 
     if (filterType !== 'all') {
-      items = items.filter((item) => `${item.type}s` === filterType);
+      if (filterType === 'functions') {
+         items = items.filter(i => ['function', 'arrow-function', 'method'].includes(i.kind));
+      } else if (filterType === 'components') {
+         items = items.filter(i => i.kind === 'component' || i.role === 'rendering');
+      } else if (filterType === 'classes') {
+         items = items.filter(i => i.kind === 'class');
+      } else if (filterType === 'other') {
+         items = items.filter(i => ['constant', 'variable', 'unknown'].includes(i.kind));
+      }
     }
 
     if (searchTerm) {
@@ -39,30 +51,29 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
         (item) =>
           item.name.toLowerCase().includes(searchLower) ||
           item.code.toLowerCase().includes(searchLower) ||
-          item.type.toLowerCase().includes(searchLower)
+          item.kind.toLowerCase().includes(searchLower) ||
+          item.role.toLowerCase().includes(searchLower)
       );
     }
 
     return items;
-  }, [extraction.extractionResults, filterType, searchTerm]);
+  }, [extraction.fileAnalysis, filterType, searchTerm]);
 
   /**
    * Handle exporting results as a JSON file
    */
   const handleExportJSON = () => {
-    if (!extraction.extractionResults) return;
+    if (!extraction.fileAnalysis) return;
 
-    // Create a clean JSON string from the results
-    const dataStr = JSON.stringify(extraction.extractionResults, null, 2);
+    // Export the beautiful new AST tree!
+    const dataStr = JSON.stringify(extraction.fileAnalysis, null, 2);
     
-    // Create a blob and a temporary download link
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     
     a.href = url;
-    // Name the file based on the original upload name
-    a.download = `${extraction.fileName.split('.')[0]}-architecture.json`;
+    a.download = `${extraction.fileName.split('.')[0]}-ast-architecture.json`;
     
     document.body.appendChild(a);
     a.click();
@@ -78,8 +89,8 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </div>
-        <p className="text-brand-darkGreen/90 font-bold text-lg">Processing your code...</p>
-        <p className="text-brand-brown/80 text-sm mt-2">This may take a few moments</p>
+        <p className="text-brand-darkGreen/90 font-bold text-lg">Analyzing codebase structure...</p>
+        <p className="text-brand-brown/80 text-sm mt-2">Extracting AST and relationships. This may take a moment.</p>
       </div>
     );
   }
@@ -87,48 +98,58 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
   if (extraction.status === 'failed') {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <h3 className="text-lg font-bold text-red-900 mb-2">Extraction Failed</h3>
+        <h3 className="text-lg font-bold text-red-900 mb-2">Analysis Failed</h3>
         <p className="text-red-700 mb-4">
-          {extraction.error || 'An error occurred while processing your code. Please try again.'}
+          {extraction.error || 'An error occurred while parsing your code. Please try again.'}
         </p>
-        <a href="/upload" className="inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors">
+        <button 
+          onClick={() => window.location.reload()}
+          className="inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium transition-colors"
+        >
           Try Again
-        </a>
+        </button>
       </div>
     );
   }
 
-  if (extraction.status === 'completed' && extraction.extractionResults) {
-    const results = extraction.extractionResults;
+  if (extraction.status === 'completed' && extraction.fileAnalysis) {
+    const analysis = extraction.fileAnalysis;
 
     return (
       <div className="space-y-6">
         
         {/* Header & Summary Master Container */}
         <div className="bg-white rounded-2xl border-2 border-brand-brown/80 shadow-xl shadow-brand-darkBrown/10 p-6">
-          <div className="mb-6 pb-6 border-b-2 border-brand-brown/30">
-            <h1 className="text-3xl font-bold text-brand-darkGreen/90 mb-2">
-              Extraction Results
-            </h1>
-            <p className="text-sm">
-              <strong className="text-brand-darkGreen/90">File: </strong>
-              <span className="text-brand-brown/80">{extraction.fileName}</span>
-              <span className="mx-2 text-brand-brown/40">•</span>
-              <strong className="text-brand-darkGreen/90">Date: </strong>
-              <span className="text-brand-brown/80">{new Date(extraction.createdAt).toLocaleDateString()}</span>
-            </p>
+          <div className="mb-6 pb-6 border-b-2 border-brand-brown/30 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-brand-darkGreen/90 mb-2">
+                Extraction Results
+              </h1>
+              <p className="text-sm">
+                <strong className="text-brand-darkGreen/90">File: </strong>
+                <span className="text-brand-brown/80">{extraction.fileName}</span>
+                <span className="mx-2 text-brand-brown/40">•</span>
+                <strong className="text-brand-darkGreen/90">Language: </strong>
+                <span className="text-brand-brown/80 capitalize">{analysis.source.language}</span>
+                <span className="mx-2 text-brand-brown/40">•</span>
+                <strong className="text-brand-darkGreen/90">Date: </strong>
+                <span className="text-brand-brown/80">{new Date(extraction.createdAt).toLocaleDateString()}</span>
+              </p>
+            </div>
           </div>
-          <ResultsSummary results={results} />
+          {/* Note: This will error until we update ResultsSummary! */}
+          <ResultsSummary analysis={analysis} />
         </div>
 
         {/* Search, Filter, and List Master Container */}
         <div className="bg-white rounded-2xl border-2 border-brand-brown/80 shadow-xl shadow-brand-darkBrown/10 p-6">
+          {/* Note: This will error until we update ResultsFilter! */}
           <ResultsFilter
             filterType={filterType}
             searchTerm={searchTerm}
             onFilterChange={setFilterType}
             onSearchChange={setSearchTerm}
-            totalItems={results.summary.totalItems}
+            totalItems={analysis.summary.totalArtifacts}
             filteredItems={filteredResults.length}
           />
 
@@ -138,7 +159,7 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
                 <svg className="w-12 h-12 mx-auto text-brand-mediumGreen/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <p className="text-brand-darkGreen/90 font-bold text-lg mb-2">No items found</p>
+                <p className="text-brand-darkGreen/90 font-bold text-lg mb-2">No artifacts found</p>
                 {searchTerm && (
                   <p className="text-brand-brown/80 text-sm">
                     Try adjusting your search or filter criteria
@@ -160,7 +181,7 @@ export default function ResultsDisplay({ extraction }: ResultsDisplayProps) {
           <div>
             <h3 className="text-lg font-bold text-brand-darkGreen/90 mb-1">Export Results</h3>
             <p className="text-brand-brown/80 text-sm">
-              Download your parsed architecture as a structured JSON file.
+              Download your parsed architecture as a structured AST JSON file.
             </p>
           </div>
           <div className="flex gap-3">

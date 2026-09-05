@@ -1,41 +1,32 @@
-/**
- * Results page tests
- */
-
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Results from './Results';
 
-// Intercept the API call to prevent Axios Network Errors during testing
-vi.mock('../services/extractions', () => ({
-  default: {
-    getExtraction: vi.fn().mockResolvedValue(null),
-  }
+// Mock the store so it initializes without a currentAnalysis
+vi.mock('../store/extractionStore', () => ({
+  useExtractionStore: () => ({
+    currentAnalysis: null,
+  })
 }));
 
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
-});
+afterEach(cleanup);
 
 describe('Results Page', () => {
   const renderWithRouter = (component: React.ReactElement) => {
     return render(<BrowserRouter>{component}</BrowserRouter>);
   };
 
-  it('should render results page with back button', () => {
+  it('should render results page and fallback to error state when missing data', async () => {
     renderWithRouter(<Results />);
 
-    expect(screen.getByText(/Back to Uploads/i)).toBeInTheDocument();
-  });
-
-  it('should show error when no extraction ID provided', () => {
-    renderWithRouter(<Results />);
-
-    expect(
-      screen.getByRole('button', { name: /Back to Uploads/i })
-    ).toBeInTheDocument();
+    // Wait for the async effect to resolve into the error state
+    const errorHeading = await screen.findByText('Error Loading Results');
+    expect(errorHeading).toBeInTheDocument();
+    
+    // Use getAllByText because the UI intentionally renders two back buttons in this view
+    const backButtons = screen.getAllByText(/Back to Uploads/i);
+    expect(backButtons.length).toBeGreaterThan(0);
   });
 });

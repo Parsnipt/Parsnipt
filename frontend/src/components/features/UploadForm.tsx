@@ -24,9 +24,9 @@ const UPLOAD_CONFIG = {
 export default function UploadForm() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  
   const {
-    addExtraction,
-    updateExtraction,
+    setCurrentAnalysis,
     setUploading,
     setUploadProgress,
     setError,
@@ -82,34 +82,6 @@ export default function UploadForm() {
   };
 
   /**
-   * Poll extraction status until completion
-   */
-  const pollForCompletion = useCallback(
-    async (extractionId: string) => {
-      try {
-        const completed = await extractionService.pollExtractionStatus(extractionId);
-        
-        updateExtraction(extractionId, {
-          status: completed.status,
-          extractionResults: completed.extractionResults,
-          error: completed.error,
-        });
-
-        // Transport immediately upon successful polling
-        navigate(`/results/${extractionId}`);
-      } catch (error) {
-        console.error('Error polling extraction status:', error);
-        setError('Failed to complete extraction processing');
-      } finally {
-        setIsSubmitting(false);
-        setUploading(false);
-        setLocalUploadProgress(0);
-      }
-    },
-    [navigate, updateExtraction, setError, setUploading]
-  );
-
-  /**
    * Handle file upload
    */
   const handleUpload = useCallback(
@@ -129,15 +101,15 @@ export default function UploadForm() {
       setLocalUploadProgress(0);
 
       try {
-        // Upload file to API
-        const extraction = await extractionService.uploadFile(file, (event) => {
+        // Upload file to API - Phase 1.5 returns AST synchronously!
+        const analysis = await extractionService.uploadFile(file, (event) => {
           const percentComplete = Math.round((event.loaded / event.total!) * 100);
           setLocalUploadProgress(percentComplete);
           setUploadProgress(percentComplete);
         });
 
-        // Add to store
-        addExtraction(extraction);
+        // Save the massive AST tree to the global state
+        setCurrentAnalysis(analysis);
 
         // Clear form
         setLocalUploadProgress(0);
@@ -145,16 +117,12 @@ export default function UploadForm() {
           fileInputRef.current.value = '';
         }
 
-        // Check if backend finished instantly
-        if (extraction.status === 'completed') {
-          setIsSubmitting(false);
-          setUploading(false);
-          navigate(`/results/${extraction.id}`);
-          return;
-        }
-
-        // Only poll if the backend says "processing"
-        pollForCompletion(extraction.id);
+        setIsSubmitting(false);
+        setUploading(false);
+        
+        // Route to the latest extraction results page
+        navigate(`/results/latest`);
+        
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Upload failed. Please try again.';
@@ -165,7 +133,7 @@ export default function UploadForm() {
         setLocalUploadProgress(0);
       }
     },
-    [user, addExtraction, setUploading, setUploadProgress, setError, clearError, navigate, pollForCompletion]
+    [user, setCurrentAnalysis, setUploading, setUploadProgress, setError, clearError, navigate]
   );
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -202,8 +170,8 @@ export default function UploadForm() {
     <div className="w-full">
       {/* Error alert */}
       {localError && (
-        <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center">
-          <span>{localError}</span>
+        <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded flex justify-between items-center shadow-sm">
+          <span className="font-medium">{localError}</span>
           <button
             type="button"
             onClick={() => setLocalError(null)}
@@ -246,7 +214,7 @@ export default function UploadForm() {
 
         {/* Upload text */}
         <h3 className="text-xl font-bold text-brand-darkGreen/90 mb-2">
-          {isSubmitting ? 'Uploading...' : 'Upload Your Code'}
+          {isSubmitting ? 'Analyzing Codebase...' : 'Upload Your Code'}
         </h3>
         <p className="text-brand-brown/80 mb-4">
           Drag and drop your file here, or click to browse
@@ -282,8 +250,8 @@ export default function UploadForm() {
             <strong className="text-brand-darkGreen/90">Max file size:</strong> {formatFileSize(getFileSizeLimit())} (
             {user?.tier || 'free'} tier)
           </p>
-          <p className="text-xs text-brand-brown/80 mt-3">
-            Your code is processed locally and never stored without your consent.
+          <p className="text-xs text-brand-brown/80 mt-3 font-medium">
+            AST Extraction runs locally on our cloud sandbox. Code is never stored without consent.
           </p>
         </div>
       </div>
@@ -292,7 +260,7 @@ export default function UploadForm() {
       {uploadProgress > 0 && uploadProgress < 100 && (
         <div className="mt-6">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-brand-darkGreen">Uploading...</span>
+            <span className="text-sm font-bold text-brand-darkGreen">Uploading...</span>
             <span className="text-sm font-bold text-brand-brown">{uploadProgress}%</span>
           </div>
           <div className="w-full bg-brand-mediumGreen/20 rounded-full h-2 overflow-hidden">
@@ -304,9 +272,9 @@ export default function UploadForm() {
         </div>
       )}
 
-      {/* Upload complete message */}
+      {/* Parsing complete message */}
       {uploadProgress === 100 && isSubmitting && (
-        <div className="mt-6 p-4 bg-brand-mediumGreen/10 border border-brand-mediumGreen/30 rounded flex items-center space-x-3">
+        <div className="mt-6 p-4 bg-brand-mediumGreen/10 border border-brand-mediumGreen/30 rounded flex items-center space-x-3 shadow-sm">
           <svg
             className="w-5 h-5 text-brand-darkGreen animate-spin"
             fill="none"
@@ -320,7 +288,7 @@ export default function UploadForm() {
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             />
           </svg>
-          <span className="text-brand-darkGreen/90 font-medium text-sm">Processing your code...</span>
+          <span className="text-brand-darkGreen/90 font-bold text-sm">Building Abstract Syntax Tree...</span>
         </div>
       )}
     </div>

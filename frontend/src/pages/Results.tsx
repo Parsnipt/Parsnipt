@@ -7,16 +7,21 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useExtractionStore } from '../store/extractionStore';
 import extractionService from '../services/extractions';
-import { Extraction } from '../types/extraction';
-import ResultsDisplay from '../components/features/ResultsDisplay';
+import ResultsDisplay, { ExtractionProcessState } from '../components/features/ResultsDisplay';
+import { Artifact } from '../types/extraction';
 
 export default function Results() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentExtraction, setCurrentExtraction } = useExtractionStore();
+  const { currentAnalysis } = useExtractionStore();
 
-  const [extraction, setExtraction] = useState<Extraction | null>(currentExtraction);
-  const [isLoading, setIsLoading] = useState(!currentExtraction);
+  const [processState, setProcessState] = useState<ExtractionProcessState>({
+    status: 'processing',
+    fileName: 'Loading...',
+    createdAt: new Date().toISOString(),
+  });
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -25,34 +30,85 @@ export default function Results() {
   useEffect(() => {
     if (!id) {
       setError('No extraction ID provided');
-      return;
-    }
-
-    if (currentExtraction?.id === id) {
-      setExtraction(currentExtraction);
       setIsLoading(false);
       return;
     }
 
-    const fetchExtraction = async () => {
+    // If viewing the latest upload, pull the AST instantly from memory
+    if (id === 'latest' && currentAnalysis) {
+      setProcessState({
+        status: 'completed',
+        fileName: currentAnalysis.source.fileName,
+        createdAt: currentAnalysis.timestamp,
+        fileAnalysis: currentAnalysis
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // If viewing a historical record, fetch it and wrap it in the new AST schema
+    const fetchHistoricalExtraction = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
         const data = await extractionService.getExtraction(id);
-        setExtraction(data);
-        setCurrentExtraction(data);
+        
+        // Mock a single artifact for the history view
+        const mockArtifact: Artifact = {
+          id: data.id,
+          name: data.name,
+          kind: data.kind,
+          role: data.role,
+          code: data.code,
+          fingerprint: data.fingerprint,
+          source: { startLine: 1, endLine: data.code.split('\n').length },
+          parent: null,
+          scopeDepth: 0,
+          syntax: { isAsync: false, isGenerator: false, isArrow: false, visibility: 'public', exportType: 'none' },
+          parameters: [],
+          returns: { present: false, count: 0, expressions: [], isAsync: false, isGenerator: false },
+          documentation: { leading: [], inline: [], trailing: [] },
+          analysis: { complexity: 'low', cyclomaticComplexity: 1, nestingDepth: 0, branchCount: 0, loopCount: 0, callCount: 0, documentationCoverage: 1 },
+          relationships: { calls: [], calledBy: [], references: [], referencedBy: [], imports: [], exports: [], children: [] },
+          confidence: { overall: 1, classification: 1, location: 1, parameters: 1, returns: 1, analysis: 1 }
+        };
+
+        setProcessState({
+          status: 'completed',
+          fileName: `${data.name} (Historical Record)`,
+          createdAt: data.created_at,
+          fileAnalysis: {
+            schemaVersion: '1.5.0',
+            generator: { name: 'Parsnipt', version: '1.5.0' },
+            source: { fileName: data.name, language: 'unknown', lineCount: 0, characterCount: 0 },
+            processingTime: { parsingMs: 0, extractionMs: 0, analysisMs: 0, totalMs: 0 },
+            timestamp: data.created_at,
+            summary: {
+              totalArtifacts: 1,
+              byKind: { [data.kind]: 1 },
+              byRole: { [data.role]: 1 },
+              overallConfidence: 1,
+              documentationCoverage: 1
+            },
+            artifacts: [mockArtifact]
+          }
+        });
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to load extraction';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load extraction';
         setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchExtraction();
-  }, [id, currentExtraction, setCurrentExtraction]);
+    if (id !== 'latest') {
+      fetchHistoricalExtraction();
+    } else if (!currentAnalysis) {
+      setError('No recent extraction found in memory.');
+      setIsLoading(false);
+    }
+  }, [id, currentAnalysis]);
 
   const handleBack = () => {
     navigate('/upload');
@@ -82,7 +138,7 @@ export default function Results() {
   }
 
   // Show error state
-  if (error || !extraction) {
+  if (error || !processState) {
     return (
       <div className="max-w-4xl mx-auto py-12 px-4">
         <button
@@ -137,7 +193,7 @@ export default function Results() {
       </div>
 
       {/* Results display */}
-      <ResultsDisplay extraction={extraction} />
+      <ResultsDisplay extraction={processState} />
     </div>
   );
 }

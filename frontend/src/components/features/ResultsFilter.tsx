@@ -3,7 +3,7 @@
  * Handles filtering by type and searching
  */
 
-type FilterType = 'all' | 'functions' | 'components' | 'utilities' | 'constants';
+import { FilterType } from './ResultsDisplay';
 
 interface ResultsFilterProps {
   filterType: FilterType;
@@ -24,11 +24,11 @@ export default function ResultsFilter({
 }: ResultsFilterProps) {
   
   const filterOptions: Array<{ value: FilterType; label: string }> = [
-    { value: 'all', label: 'All Items' },
-    { value: 'functions', label: 'Functions' },
-    { value: 'components', label: 'Components' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'constants', label: 'Constants' },
+    { value: 'all', label: 'All Artifacts' },
+    { value: 'functions', label: 'Functions & Methods' },
+    { value: 'components', label: 'React Components' },
+    { value: 'classes', label: 'Classes' },
+    { value: 'other', label: 'Variables & Other' },
   ];
 
   /**
@@ -39,16 +39,16 @@ export default function ResultsFilter({
       switch (type) {
         case 'functions': return 'bg-blue-600 text-white border-blue-600 shadow-sm';
         case 'components': return 'bg-purple-600 text-white border-purple-600 shadow-sm';
-        case 'utilities': return 'bg-green-600 text-white border-green-600 shadow-sm';
-        case 'constants': return 'bg-orange-600 text-white border-orange-600 shadow-sm';
+        case 'classes': return 'bg-emerald-600 text-white border-emerald-600 shadow-sm';
+        case 'other': return 'bg-orange-600 text-white border-orange-600 shadow-sm';
         default: return 'bg-brand-darkGreen/90 text-brand-cream border-brand-darkGreen/90 shadow-sm';
       }
     } else {
       switch (type) {
         case 'functions': return 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100';
         case 'components': return 'bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100';
-        case 'utilities': return 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100';
-        case 'constants': return 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100';
+        case 'classes': return 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100';
+        case 'other': return 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100';
         default: return 'bg-brand-cream/50 text-brand-darkGreen/90 border-brand-brown/30 hover:bg-brand-cream hover:border-brand-brown/80';
       }
     }
@@ -59,7 +59,7 @@ export default function ResultsFilter({
       {/* Search box */}
       <div>
         <label htmlFor="search" className="block text-sm font-bold text-brand-darkGreen/90 mb-2">
-          Search Code Items
+          Search Code Artifacts
         </label>
         <div className="relative">
           <svg
@@ -73,7 +73,7 @@ export default function ResultsFilter({
           <input
             type="text"
             id="search"
-            placeholder="Search by name, type, or code..."
+            placeholder="Search by name, role, or code content..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="input-base pl-10 w-full"
@@ -88,7 +88,7 @@ export default function ResultsFilter({
           )}
         </div>
         <p className="text-xs text-brand-brown/80 mt-1">
-          Search in names and code content
+          Search in names, code content, kind, and role
         </p>
       </div>
 

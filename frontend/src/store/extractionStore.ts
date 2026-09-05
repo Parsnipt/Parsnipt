@@ -4,12 +4,13 @@
  */
 
 import { create } from 'zustand';
-import { Extraction } from '../types/extraction';
+import { DbExtraction, FileAnalysis } from '../types/extraction';
 
 interface ExtractionStore {
   // Extraction data
-  extractions: Extraction[];
-  currentExtraction: Extraction | null;
+  extractions: DbExtraction[];
+  currentExtraction: DbExtraction | null;
+  currentAnalysis: FileAnalysis | null; 
 
   // Loading and error states
   isLoading: boolean;
@@ -18,10 +19,11 @@ interface ExtractionStore {
   error: string | null;
 
   // Actions
-  addExtraction: (extraction: Extraction) => void;
-  setExtractions: (extractions: Extraction[]) => void;
-  setCurrentExtraction: (extraction: Extraction | null) => void;
-  updateExtraction: (extractionId: string, updates: Partial<Extraction>) => void;
+  addExtraction: (extraction: DbExtraction) => void;
+  setExtractions: (extractions: DbExtraction[]) => void;
+  setCurrentExtraction: (extraction: DbExtraction | null) => void;
+  setCurrentAnalysis: (analysis: FileAnalysis | null) => void; 
+  updateExtraction: (extractionId: string, updates: Partial<DbExtraction>) => void;
   removeExtraction: (extractionId: string) => void;
 
   setLoading: (loading: boolean) => void;
@@ -36,6 +38,7 @@ interface ExtractionStore {
 const initialState = {
   extractions: [],
   currentExtraction: null,
+  currentAnalysis: null,
   isLoading: false,
   isUploading: false,
   uploadProgress: 0,
@@ -61,6 +64,11 @@ export const useExtractionStore = create<ExtractionStore>((set) => ({
       currentExtraction: extraction,
     }),
 
+  setCurrentAnalysis: (analysis) =>
+    set({
+      currentAnalysis: analysis,
+    }),
+
   updateExtraction: (extractionId, updates) =>
     set((state) => ({
       extractions: state.extractions.map((e) =>
@@ -82,14 +90,9 @@ export const useExtractionStore = create<ExtractionStore>((set) => ({
     })),
 
   setLoading: (isLoading) => set({ isLoading }),
-
   setUploading: (isUploading) => set({ isUploading }),
-
   setUploadProgress: (uploadProgress) => set({ uploadProgress }),
-
   setError: (error) => set({ error }),
-
   clearError: () => set({ error: null }),
-
   reset: () => set(initialState),
 }));
